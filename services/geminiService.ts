@@ -93,7 +93,7 @@ const menuSchema = {
 
 const generateRecipeImage = async (recipeName: string, description: string): Promise<string | null> => {
     try {
-        const prompt = `A vibrant, delicious, professional food photograph of "${recipeName}". ${description}. Shot in a modern, clean style, with a shallow depth of field. Appetizing and beautifully lit.`;
+        const prompt = `A vibrant, delicious, professional, web-optimized food photograph of "${recipeName}". ${description}. Shot in a modern, clean style, with a simple, blurred background and shallow depth of field. Appetizing and beautifully lit.`;
 
         const response = await ai.models.generateImages({
             model: 'imagen-4.0-generate-001',
@@ -270,7 +270,7 @@ export const generateMenu = async (occasion: string): Promise<Menu> => {
 
         // Step 2: Generate images for all three courses and the menu occasion in parallel
         const [menuImage, appetizerImage, mainCourseImage, dessertImage] = await Promise.all([
-            generateRecipeImage(menuData.occasion.en, "A beautiful, thematic food spread representing this dining occasion. Professional photography."),
+            generateRecipeImage(menuData.occasion.en, "A beautiful, thematic, web-optimized food spread representing this dining occasion. Professional photography with a simple, clean background."),
             generateRecipeImage(menuData.appetizer.recipeName.en, menuData.appetizer.description.en),
             generateRecipeImage(menuData.mainCourse.recipeName.en, menuData.mainCourse.description.en),
             generateRecipeImage(menuData.dessert.recipeName.en, menuData.dessert.description.en)

@@ -147,6 +147,9 @@ const translationAR = {
   },
   "footer": {
       "copyright": "© {{year}} {{name}}. كل الحقوق محفوظة."
+  },
+  "whatsNew": {
+    "continue": "متابعة"
   }
 };
 
@@ -295,6 +298,9 @@ const translationEN = {
   },
   "footer": {
       "copyright": "© {{year}} {{name}}. All rights reserved."
+  },
+  "whatsNew": {
+    "continue": "Continue"
   }
 };
 

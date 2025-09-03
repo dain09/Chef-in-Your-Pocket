@@ -5,13 +5,13 @@ export const getYouTubeEmbedUrl = (url: string): string | null => {
     try {
         const urlObj = new URL(url);
         // Standard `https://www.youtube.com/watch?v=...`
-        if (urlObj.hostname === 'www.youtube.com' || urlObj.hostname === 'youtube.com') {
+        if (urlObj.hostname === 'www.youtube.com' || urlObj.hostname === 'youtube.com' || urlObj.hostname === 'www.youtube-nocookie.com') {
             if (urlObj.pathname === '/watch') {
                 videoId = urlObj.searchParams.get('v');
             } else if (urlObj.pathname.startsWith('/embed/')) {
                 // It's already an embed link, just add our params
                 const existingVideoId = urlObj.pathname.split('/')[2];
-                return `https://www.youtube.com/embed/${existingVideoId}?rel=0`;
+                return `https://www.youtube-nocookie.com/embed/${existingVideoId}?rel=0`;
             } else if (urlObj.pathname.startsWith('/live/')) {
                 // `https://www.youtube.com/live/...`
                 videoId = urlObj.pathname.split('/')[2];
@@ -38,8 +38,7 @@ export const getYouTubeEmbedUrl = (url: string): string | null => {
 
     if (videoId) {
         const cleanVideoId = videoId.split('?')[0]; // Remove any query params from ID itself
-        // Removed origin parameter for better compatibility
-        return `https://www.youtube.com/embed/${cleanVideoId}?rel=0`;
+        return `https://www.youtube-nocookie.com/embed/${cleanVideoId}?rel=0`;
     }
 
     return null;

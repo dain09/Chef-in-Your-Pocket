@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -29,6 +26,9 @@ import OnboardingTutorial from './components/OnboardingTutorial';
 import Footer from './components/Footer';
 import { ToastProvider } from './contexts/ToastContext';
 import ToastContainer from './components/ToastContainer';
+import WhatsNewModal from './components/WhatsNewModal';
+import { LATEST_CHANGELOG_VERSION } from './data/changelog';
+
 
 export interface CookingSession {
   recipe: Recipe;
@@ -59,12 +59,22 @@ const App: React.FC = () => {
   const [activeView, setActiveView] = useState<'home' | 'favorites'>('home');
   const [backgroundColor, setBackgroundColor] = useState<string | null>(null);
   const [hasSeenTutorial, setHasSeenTutorial] = useLocalStorage('chef-hasSeenTutorial', false);
+  const [lastSeenVersion, setLastSeenVersion] = useLocalStorage('chef-lastSeenVersion', '0.0.0');
+  const [showWhatsNew, setShowWhatsNew] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowSplash(false), 2500);
     return () => clearTimeout(timer);
   }, []);
   
+  useEffect(() => {
+    // Show "What's New" only after the user has seen the initial tutorial
+    // and if the current version is newer than the last seen version.
+    if (hasSeenTutorial && LATEST_CHANGELOG_VERSION > lastSeenVersion) {
+        setShowWhatsNew(true);
+    }
+  }, [hasSeenTutorial, lastSeenVersion]);
+
   useEffect(() => {
     if (recipe) {
       setBackgroundColor(categoryColorMap[recipe.category] || null);
@@ -77,6 +87,11 @@ const App: React.FC = () => {
     document.documentElement.lang = i18n.language;
     document.documentElement.dir = i18n.dir();
   }, [i18n.language, i18n.dir]);
+  
+  const handleCloseWhatsNew = () => {
+    setShowWhatsNew(false);
+    setLastSeenVersion(LATEST_CHANGELOG_VERSION);
+  };
 
   const handleRecipeGeneration = useCallback(async (ingredients: string, cuisine: string, allergies: string, diet: string) => {
     setIsLoading(true);
@@ -228,6 +243,11 @@ const App: React.FC = () => {
       <AnimatePresence>
         {!hasSeenTutorial && !showSplash && <OnboardingTutorial onFinish={() => setHasSeenTutorial(true)} />}
       </AnimatePresence>
+      
+      <AnimatePresence>
+        {showWhatsNew && <WhatsNewModal onClose={handleCloseWhatsNew} />}
+      </AnimatePresence>
+
       <AnimatePresence>
         {showSplash && <SplashScreen />}
       </AnimatePresence>
