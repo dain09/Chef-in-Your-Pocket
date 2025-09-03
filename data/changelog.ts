@@ -1,8 +1,50 @@
-import { HandHelping, Utensils, BellRing, Sparkles, Eye, Smartphone, GlassWater, ShieldCheck, Download } from 'lucide-react';
+import { HandHelping, Utensils, BellRing, Sparkles, Eye, Smartphone, GlassWater, ShieldCheck, Download, Search, Youtube, Zap } from 'lucide-react';
 
-export const LATEST_CHANGELOG_VERSION = '1.5.0';
+export const LATEST_CHANGELOG_VERSION = '1.6.0';
 
 export const changelog = [
+    {
+        version: '1.6.0',
+        title: {
+            en: 'Search & Speed Update!',
+            ar: 'تحديث البحث والسرعة!',
+        },
+        features: [
+            {
+                icon: Search,
+                title: {
+                    en: 'Find Recipes by Name',
+                    ar: 'ابحث عن الوصفات بالاسم',
+                },
+                description: {
+                    en: 'Looking for a specific dish? Use the new "Search by Name" mode to find popular recipes like "KFC Chicken" or "Mahshi" instantly.',
+                    ar: 'هل تبحث عن طبق معين؟ استخدم وضع "البحث بالاسم" الجديد للعثور فورًا على وصفات شهيرة مثل "دجاج كنتاكي" أو "المحشي".',
+                },
+            },
+            {
+                icon: Youtube,
+                title: {
+                    en: 'Better Video Tutorials',
+                    ar: 'فيديوهات تعليمية أفضل',
+                },
+                description: {
+                    en: 'We\'ve improved our AI to find the best and most popular YouTube tutorials for your recipes, making cooking even easier.',
+                    ar: 'لقد قمنا بتحسين الذكاء الاصطناعي للعثور على أفضل فيديوهات اليوتيوب التعليمية وأكثرها شهرة لوصفاتك، مما يجعل الطهي أسهل.',
+                },
+            },
+            {
+                icon: Zap,
+                title: {
+                    en: 'Faster Recipe Generation',
+                    ar: 'إنشاء وصفات أسرع',
+                },
+                description: {
+                    en: 'Recipe images have been temporarily disabled to make generating your culinary creations significantly faster.',
+                    ar: 'تم تعطيل صور الوصفات مؤقتًا لجعل عملية إنشاء إبداعاتك في الطهي أسرع بكثير.',
+                },
+            },
+        ],
+    },
     {
         version: '1.5.0',
         title: {

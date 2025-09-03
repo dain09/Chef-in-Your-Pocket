@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type, Chat } from "@google/genai";
-import type { Recipe, Ingredient, Substitute, Menu, Pairing } from '../types';
+import type { Recipe, Ingredient, Substitute, Menu, Pairing, MultilingualString } from '../types';
 
 // Per @google/genai guidelines, the API key must be sourced directly from `process.env.API_KEY`.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
@@ -73,7 +73,7 @@ const recipeSchema = {
     },
     youtubeLink: {
         ...multilingualStringSchema,
-        description: "An optional, relevant YouTube tutorial link for a similar recipe. If found, provide the URL in both 'en' and 'ar' fields. If not found, omit this field."
+        description: "Search the web to find the single best, most popular, and highly-rated YouTube tutorial video for this recipe from a reputable cooking channel. Provide the full, direct URL. If a great video is found, provide the URL in both 'en' and 'ar' fields. If no suitable video is found, omit this field entirely."
     }
   },
   required: ["recipeName", "description", "prepTime", "cookTime", "servings", "difficulty", "category", "ingredients", "steps", "nutrition", "funStuff"],
@@ -92,28 +92,8 @@ const menuSchema = {
 
 
 const generateRecipeImage = async (recipeName: string, description: string): Promise<string | null> => {
-    try {
-        const prompt = `A vibrant, delicious, professional food photograph of "${recipeName}". ${description}. Critically, this image must be a lightweight, compressed for web, and fast-loading JPEG. Shot in a modern, clean style, with a simple, blurred background and shallow depth of field. Appetizing and beautifully lit.`;
-
-        const response = await ai.models.generateImages({
-            model: 'imagen-4.0-generate-001',
-            prompt: prompt,
-            config: {
-                numberOfImages: 1,
-                outputMimeType: 'image/jpeg',
-                aspectRatio: '16:9',
-            },
-        });
-
-        if (response.generatedImages && response.generatedImages.length > 0) {
-            const base64ImageBytes: string = response.generatedImages[0].image.imageBytes;
-            return `data:image/jpeg;base64,${base64ImageBytes}`;
-        }
-        return null;
-    } catch (error) {
-        console.error("Error generating recipe image:", error);
-        return null; // Return null if image generation fails, so the recipe can still be displayed.
-    }
+    // Temporarily disabled to speed up the process per user request.
+    return Promise.resolve(null);
 };
 
 const pairingSchema = {
@@ -190,7 +170,7 @@ export const generateRecipe = async (ingredients: string, cuisine: string, aller
     Please generate the recipe in a single, valid JSON object according to the provided schema.
     - You must classify the recipe's category and difficulty.
     - You must provide exactly 3 different jokes, 3 pro tips, and one historical fact.
-    - If you can find a relevant, high-quality YouTube tutorial video for a similar recipe, please include its URL in the 'youtubeLink' field. If no suitable video is found, omit this field entirely.
+    - Search as if you are using Google to find the single best and most popular YouTube tutorial video for this recipe. It must be from a reputable cooking channel. Include its full URL in the 'youtubeLink' field. If no suitable video is found, omit this field.
     - Do not include any text, greetings, or explanations outside the JSON object itself.
   `;
 
@@ -227,6 +207,59 @@ export const generateRecipe = async (ingredients: string, cuisine: string, aller
     throw new Error("errorFailedToGenerate");
   }
 };
+
+export const searchRecipeByName = async (recipeNameQuery: string): Promise<Recipe> => {
+      const prompt = `
+        You are a world-class chef, food historian, and comedian named "Chef AI".
+        A user is searching for a specific recipe by name. Your task is to provide the most popular, authentic, and well-regarded version of this recipe.
+
+        Recipe Name Searched: "${recipeNameQuery}"
+
+        **CRITICAL INSTRUCTION**: For EVERY text field (e.g., recipeName, description, ingredient names, steps, tips, jokes), you MUST provide an object with two keys: 'en' for the English version and 'ar' for the Arabic (العربية) version. The entire JSON response must follow this bilingual structure.
+
+        **CRITICAL DIETARY RESTRICTION**: The recipe MUST NOT contain any pork, pork-derived products (like gelatin, lard), or any form of alcohol (like wine, beer, liquor) as an ingredient. This is a strict requirement.
+
+        Please generate the recipe in a single, valid JSON object according to the provided schema.
+        - The 'recipeName' you return should be the official name of the dish, even if the user's query was a bit different.
+        - You must classify the recipe's category and difficulty.
+        - You must provide exactly 3 different jokes, 3 pro tips, and one historical fact.
+        - Search as if you are using Google to find the single best and most popular YouTube tutorial video for this recipe. It must be from a reputable cooking channel. Include its full URL in the 'youtubeLink'field. If no suitable video is found, omit this field.
+        - Do not include any text, greetings, or explanations outside the JSON object itself.
+      `;
+
+      try {
+        // Step 1: Generate Recipe Text
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: prompt,
+          config: {
+            responseMimeType: 'application/json',
+            responseSchema: recipeSchema,
+          },
+        });
+
+        const text = response.text;
+        const recipeData = JSON.parse(text);
+
+        // Step 2: Generate Recipe Image and Pairings in parallel
+        const [imageUrl, pairings] = await Promise.all([
+            generateRecipeImage(recipeData.recipeName.en, recipeData.description.en),
+            getDrinkPairings(recipeData.recipeName.en, recipeData.description.en)
+        ]);
+
+        // Step 3: Combine and Return
+        return {
+            ...recipeData,
+            id: new Date().toISOString(),
+            imageUrl: imageUrl || undefined,
+            pairings: pairings || undefined
+        };
+
+      } catch (error) {
+        console.error("Error searching for recipe from Gemini:", error);
+        throw new Error("errorFailedToGenerate");
+      }
+    };
 
 export const generateMenu = async (occasion: string): Promise<Menu> => {
     const prompt = `
@@ -300,6 +333,7 @@ export const remixRecipe = async (originalRecipe: Recipe, remixPrompt: string): 
     - If the user asks for "vegetarian", replace meat. If they ask for "spicier", add chili. Be creative but accurate.
     - The difficulty, category, or prep/cook times might need to be adjusted based on the change.
     - Keep the fun stuff (tips, jokes, history) relevant to the new version of the dish.
+    - Search as if you are using Google to find the single best and most popular YouTube tutorial video for this NEW version of the recipe. It must be from a reputable cooking channel. Include its full URL in the 'youtubeLink' field. If no suitable video is found, omit this field.
     - Do not include any text, greetings, or explanations outside the single, valid JSON object.
   `;
 
@@ -407,6 +441,45 @@ export const getIngredientSubstitutes = async (ingredient: Ingredient, recipe: R
     } catch (error) {
         console.error("Error finding ingredient substitutes:", error);
         throw new Error("errorFindingSubstitutes");
+    }
+};
+
+const cookingTipSchema = {
+    type: Type.OBJECT,
+    properties: {
+        tip: { ...multilingualStringSchema, description: "A short, interesting cooking tip or food fact in both English and Arabic." }
+    },
+    required: ["tip"]
+};
+
+export const getCookingTip = async (): Promise<MultilingualString> => {
+    const prompt = `
+        You are a world-class chef. Provide a single, interesting, and short cooking tip or food fact.
+        The tip must be suitable for a loading screen.
+        **CRITICAL INSTRUCTION**: Your response must be a single, valid JSON object following the provided schema.
+        The tip must be in both English and Arabic.
+        Do not include any text, greetings, or explanations outside the JSON object.
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: 'application/json',
+                responseSchema: cookingTipSchema,
+            },
+        });
+        const text = response.text;
+        const data = JSON.parse(text);
+        return data.tip;
+    } catch (error) {
+        console.error("Error generating cooking tip:", error);
+        // Fallback to a static tip in case of an error.
+        return {
+            en: "Reading a recipe fully before you start is the first step to success.",
+            ar: "قراءة الوصفة بالكامل قبل البدء هي أول خطوة نحو النجاح."
+        };
     }
 };
 

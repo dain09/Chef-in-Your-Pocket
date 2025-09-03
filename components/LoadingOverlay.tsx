@@ -2,14 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { ChefHat } from 'lucide-react';
-import type { LoadingMessages } from '../types';
+import type { LoadingMessages, MultilingualString } from '../types';
+import { getCookingTip } from '../services/geminiService';
 
 interface LoadingOverlayProps {
   type: LoadingMessages;
 }
 
 const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ type }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
   
   const getMessagesForType = (currentType: LoadingMessages): string[] => {
       switch (currentType) {
@@ -30,12 +32,10 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ type }) => {
               return [t('generating')];
       }
   };
-
-  const loadingTips = t('loadingTips', { returnObjects: true }) as string[];
   
   const [messages, setMessages] = useState(getMessagesForType(type));
   const [messageIndex, setMessageIndex] = useState(0);
-  const [tipIndex, setTipIndex] = useState(0);
+  const [currentTip, setCurrentTip] = useState<MultilingualString | null>(null);
 
   useEffect(() => {
     const newMessages = getMessagesForType(type);
@@ -58,12 +58,34 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ type }) => {
   }, [type, t]);
 
   useEffect(() => {
-    const tipInterval = setInterval(() => {
-      setTipIndex(prevIndex => (prevIndex + 1) % loadingTips.length);
-    }, 4000); 
+    let isMounted = true;
 
-    return () => clearInterval(tipInterval);
-  }, [loadingTips.length]);
+    const fetchTip = async () => {
+        try {
+            const tip = await getCookingTip();
+            if (isMounted) {
+                setCurrentTip(tip);
+            }
+        } catch (error) {
+            console.error("Failed to fetch cooking tip:", error);
+            if (isMounted) {
+                setCurrentTip({
+                    en: "Sharpen your knives for safer and easier cooking.",
+                    ar: "اشحذ سكاكينك لطبخ أكثر أمانًا وسهولة."
+                });
+            }
+        }
+    };
+
+    fetchTip(); // Initial fetch
+
+    const tipInterval = setInterval(fetchTip, 6000); // Fetch a new tip every 6 seconds
+
+    return () => {
+        isMounted = false;
+        clearInterval(tipInterval);
+    };
+  }, []);
 
   return (
     <motion.div
@@ -107,14 +129,14 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ type }) => {
           <div className="h-16 flex items-center justify-center">
              <AnimatePresence mode="wait">
                 <motion.p
-                    key={tipIndex}
+                    key={currentTip ? currentTip.en : 'loading-tip'}
                     className="text-white/70 italic text-base"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1, transition: { delay: 0.3 } }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.5 }}
                 >
-                    {loadingTips[tipIndex]}
+                    {currentTip ? currentTip[langKey] : '...'}
                 </motion.p>
              </AnimatePresence>
           </div>

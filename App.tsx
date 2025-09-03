@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { generateRecipe, remixRecipe, identifyIngredientsFromImage, generateMenu, startCookingChat } from './services/geminiService';
+import { generateRecipe, remixRecipe, identifyIngredientsFromImage, generateMenu, startCookingChat, searchRecipeByName } from './services/geminiService';
 import type { Recipe, Ingredient, LoadingMessages, Menu } from './types';
 import type { Chat } from '@google/genai';
 
@@ -102,6 +102,22 @@ const App: React.FC = () => {
     setError(null);
     try {
       const newRecipe = await generateRecipe(ingredients, cuisine, allergies, diet);
+      setRecipe(newRecipe);
+    } catch (err: any) {
+      setError(t(err.message) || t("errorFailedToGenerate"));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [t]);
+
+  const handleRecipeSearch = useCallback(async (recipeName: string) => {
+    setIsLoading(true);
+    setLoadingMessage('generating');
+    setRecipe(null);
+    setMenu(null);
+    setError(null);
+    try {
+      const newRecipe = await searchRecipeByName(recipeName);
       setRecipe(newRecipe);
     } catch (err: any) {
       setError(t(err.message) || t("errorFailedToGenerate"));
@@ -318,7 +334,14 @@ const App: React.FC = () => {
                         exit={{ opacity: 0, y: -30 }}
                         transition={{ duration: 0.5, ease: 'easeInOut' }}
                       >
-                        <RecipeForm onRecipeSubmit={handleRecipeGeneration} onMenuSubmit={handleMenuGeneration} isLoading={isLoading} onAnalyzeImage={handleImageAnalysis} setError={setError} />
+                        <RecipeForm 
+                            onRecipeSubmit={handleRecipeGeneration} 
+                            onMenuSubmit={handleMenuGeneration} 
+                            onRecipeSearch={handleRecipeSearch}
+                            isLoading={isLoading} 
+                            onAnalyzeImage={handleImageAnalysis} 
+                            setError={setError} 
+                        />
                       </motion.div>
                     )}
 
