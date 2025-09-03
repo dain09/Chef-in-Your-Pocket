@@ -7,7 +7,6 @@ import GlassCard from './GlassCard';
 import { Heart, ListPlus, ChefHat, VenetianMask, BookOpen, PlayCircle, Apple, BrainCircuit, Youtube, Wand2, X, GlassWater, Share2 } from 'lucide-react';
 import { parseIngredient } from '../utils/ingredientParser';
 import { getIngredientSubstitutes } from '../services/geminiService';
-import { getYouTubeEmbedUrl } from '../utils/youtubeParser';
 import { useToast } from '../contexts/ToastContext';
 
 
@@ -31,58 +30,6 @@ interface SubstitutesModalProps {
   recipe: Recipe;
   langKey: 'en' | 'ar';
 }
-
-interface VideoModalProps {
-  onClose: () => void;
-  videoUrl: string;
-}
-
-const VideoModal: React.FC<VideoModalProps> = ({ onClose, videoUrl }) => {
-  const embedUrl = getYouTubeEmbedUrl(videoUrl);
-
-  useEffect(() => {
-    if (!embedUrl) {
-      onClose();
-    }
-  }, [embedUrl, onClose]);
-
-  if (!embedUrl) {
-    return null;
-  }
-
-  return (
-    <motion.div
-      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
-        <motion.div 
-            className="w-full max-w-4xl aspect-video relative"
-            initial={{ scale: 0.8 }}
-            animate={{ scale: 1 }}
-            exit={{ scale: 0.8 }}
-        >
-            <button 
-                onClick={onClose} 
-                className="absolute -top-10 right-0 p-2 text-white/70 hover:text-white z-10 bg-black/20 rounded-full"
-                aria-label="Close video player"
-            >
-                <X size={24} />
-            </button>
-            <iframe
-                className="w-full h-full rounded-2xl border border-white/30 shadow-lg"
-                src={embedUrl}
-                title="YouTube video player"
-                frameBorder="0"
-                allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-            ></iframe>
-        </motion.div>
-    </motion.div>
-  );
-};
-
 
 const itemVariants: Variants = {
   hidden: { opacity: 0, y: 20 },
@@ -251,14 +198,12 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onAddToFavorites, onAdd
   const [activeTab, setActiveTab] = useState<'method' | 'nutrition' | 'fun' | 'pairings'>('method');
   const [isRemixing, setIsRemixing] = useState(false);
   const [selectedIngredient, setSelectedIngredient] = useState<Ingredient | null>(null);
-  const [showVideo, setShowVideo] = useState(false);
 
 
   useEffect(() => {
     setServings(recipe.servings);
     setScaledIngredients(recipe.ingredients);
     setActiveTab('method');
-    setShowVideo(false);
     audioService.playSuccess();
   }, [recipe]);
 
@@ -324,6 +269,13 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onAddToFavorites, onAdd
         console.error('Failed to copy text: ', err);
       }
     }
+  };
+
+  const handleWatchTutorial = () => {
+    audioService.playClick();
+    const query = encodeURIComponent(recipe.recipeName[langKey]);
+    const url = `https://www.youtube.com/results?search_query=${query}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const difficultyKey = recipe.difficulty?.toLowerCase() as 'easy' | 'medium' | 'hard';
@@ -456,12 +408,6 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onAddToFavorites, onAdd
             langKey={langKey}
           />
         )}
-        {showVideo && recipe.youtubeLink && recipe.youtubeLink[langKey] && (
-          <VideoModal
-            onClose={() => { audioService.playPop(); setShowVideo(false); }}
-            videoUrl={recipe.youtubeLink[langKey]}
-          />
-        )}
       </AnimatePresence>
       <motion.div
         variants={itemVariants}
@@ -511,17 +457,15 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onAddToFavorites, onAdd
                     </motion.span>
                     {isFavorite ? t('inFavorites') : t('addToFavorites')}
                   </motion.button>
-                  {recipe.youtubeLink && recipe.youtubeLink[langKey] && (
-                      <motion.button
-                          onClick={() => { audioService.playClick(); setShowVideo(true); }}
-                          className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors bg-red-500/90 text-white hover:bg-red-500"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                      >
-                          <Youtube className="w-5 h-5" />
-                          {t('watchTutorial')}
-                      </motion.button>
-                  )}
+                  <motion.button
+                      onClick={handleWatchTutorial}
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors bg-red-500/90 text-white hover:bg-red-500"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                  >
+                      <Youtube className="w-5 h-5" />
+                      {t('watchTutorial')}
+                  </motion.button>
                    <motion.button
                     onClick={() => { audioService.playPop(); setIsRemixing(true); }}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors bg-purple-500/90 text-white hover:bg-purple-500"

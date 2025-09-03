@@ -54,7 +54,6 @@ export interface Recipe {
     historyFact: MultilingualString;
   };
   imageUrl?: string;
-  youtubeLink?: MultilingualString;
   pairings?: Pairing[];
 }
 

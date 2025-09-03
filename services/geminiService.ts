@@ -71,10 +71,6 @@ const recipeSchema = {
       },
       required: ["proTips", "jokes", "historyFact"],
     },
-    youtubeLink: {
-        ...multilingualStringSchema,
-        description: "Search the web to find the single best, most popular, and highly-rated YouTube tutorial video for this recipe from a reputable cooking channel. Provide the full, direct URL. If a great video is found, provide the URL in both 'en' and 'ar' fields. If no suitable video is found, omit this field entirely."
-    }
   },
   required: ["recipeName", "description", "prepTime", "cookTime", "servings", "difficulty", "category", "ingredients", "steps", "nutrition", "funStuff"],
 };
@@ -170,7 +166,6 @@ export const generateRecipe = async (ingredients: string, cuisine: string, aller
     Please generate the recipe in a single, valid JSON object according to the provided schema.
     - You must classify the recipe's category and difficulty.
     - You must provide exactly 3 different jokes, 3 pro tips, and one historical fact.
-    - Search as if you are using Google to find the single best and most popular YouTube tutorial video for this recipe. It must be from a reputable cooking channel. Include its full URL in the 'youtubeLink' field. If no suitable video is found, omit this field.
     - Do not include any text, greetings, or explanations outside the JSON object itself.
   `;
 
@@ -223,7 +218,6 @@ export const searchRecipeByName = async (recipeNameQuery: string): Promise<Recip
         - The 'recipeName' you return should be the official name of the dish, even if the user's query was a bit different.
         - You must classify the recipe's category and difficulty.
         - You must provide exactly 3 different jokes, 3 pro tips, and one historical fact.
-        - Search as if you are using Google to find the single best and most popular YouTube tutorial video for this recipe. It must be from a reputable cooking channel. Include its full URL in the 'youtubeLink'field. If no suitable video is found, omit this field.
         - Do not include any text, greetings, or explanations outside the JSON object itself.
       `;
 
@@ -276,7 +270,6 @@ export const remixLeftovers = async (ingredients: string): Promise<Recipe> => {
     - Invent a suitable recipe name.
     - The ingredients list in your response should primarily be what the user provided. You may assume common pantry staples like salt, pepper, oil, and water are available, but do not add major new ingredients.
     - Generate all other fields like steps, nutrition, fun facts, etc., to match this new, creative dish.
-    - Search the web to find the single best YouTube tutorial for a recipe SIMILAR to the one you invented. Include its URL in 'youtubeLink'. If none is suitable, omit the field.
     - Your response must be a single, valid JSON object according to the schema. Do not include any text or explanations outside the JSON object.
   `;
 
@@ -386,7 +379,6 @@ export const remixRecipe = async (originalRecipe: Recipe, remixPrompt: string): 
     - If the user asks for "vegetarian", replace meat. If they ask for "spicier", add chili. Be creative but accurate.
     - The difficulty, category, or prep/cook times might need to be adjusted based on the change.
     - Keep the fun stuff (tips, jokes, history) relevant to the new version of the dish.
-    - Search as if you are using Google to find the single best and most popular YouTube tutorial video for this NEW version of the recipe. It must be from a reputable cooking channel. Include its full URL in the 'youtubeLink' field. If no suitable video is found, omit this field.
     - Do not include any text, greetings, or explanations outside the single, valid JSON object.
   `;
 
