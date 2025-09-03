@@ -159,14 +159,14 @@ const getDrinkPairings = async (recipeName: string, recipeDescription: string): 
     `;
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-1.5-flash',
             contents: prompt,
             config: {
                 responseMimeType: 'application/json',
                 responseSchema: pairingsResponseSchema,
             },
         });
-        // FIX: Access the .text property directly to get the response string.
+        // Correctly access the .text property for the response string.
         const text = response.text;
         return JSON.parse(text);
     } catch (error) {
@@ -213,7 +213,7 @@ export const generateRecipe = async (ingredients: string, cuisine: string, aller
   try {
     // Step 1: Generate Recipe Text
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-1.5-flash',
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
@@ -262,7 +262,7 @@ export const searchRecipeByName = async (recipeNameQuery: string): Promise<Recip
       try {
         // Step 1: Generate Recipe Text
         const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
+          model: 'gemini-1.5-flash',
           contents: prompt,
           config: {
             responseMimeType: 'application/json',
@@ -311,7 +311,7 @@ export const remixLeftovers = async (ingredients: string): Promise<Recipe> => {
   try {
     // Step 1: Generate Recipe Text
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-1.5-flash',
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
@@ -359,7 +359,7 @@ export const generateMenu = async (occasion: string): Promise<Menu> => {
     try {
         // Step 1: Generate all text data for the menu in one call
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-1.5-flash',
             contents: prompt,
             config: {
                 responseMimeType: 'application/json',
@@ -418,7 +418,7 @@ export const remixRecipe = async (originalRecipe: Recipe, remixPrompt: string): 
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-1.5-flash',
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
@@ -459,7 +459,7 @@ export const identifyIngredientsFromImage = async (base64Image: string): Promise
         const textPart = { text: prompt };
 
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-1.5-flash',
             contents: { parts: [imagePart, textPart] },
         });
 
@@ -503,7 +503,7 @@ export const getIngredientSubstitutes = async (ingredient: Ingredient, recipe: R
 
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-1.5-flash',
             contents: prompt,
             config: {
                 responseMimeType: 'application/json',
@@ -539,7 +539,7 @@ export const getCookingTip = async (): Promise<MultilingualString> => {
 
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-1.5-flash',
             contents: prompt,
             config: {
                 responseMimeType: 'application/json',
@@ -580,7 +580,7 @@ export const generateWeeklyMealPlan = async (userPrompt: string): Promise<MealPl
 
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-1.5-flash',
             contents: prompt,
             config: {
                 responseMimeType: 'application/json',
@@ -618,7 +618,7 @@ The user's language is ${langKey}. You must respond in that language.`;
     `;
 
     const chat = ai.chats.create({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-1.5-flash',
         config: {
             systemInstruction,
         },

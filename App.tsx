@@ -48,7 +48,6 @@ const categoryColorMap: Record<Recipe['category'], string> = {
     'General': 'rgba(167, 139, 250, 0.4)',    // violet-400
 };
 
-// FIX: Removed React.FC type for modern React best practices
 const AppContent = () => {
   const { t, i18n } = useTranslation();
   const { addToast } = useToast();
@@ -508,7 +507,6 @@ const AppContent = () => {
 }
 
 
-// FIX: Removed React.FC type for modern React best practices
 const App = () => {
     return (
         <ToastProvider>

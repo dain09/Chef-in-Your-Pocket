@@ -5,30 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import type { ChatMessage } from '../types';
 import type { CookingSession } from '../App';
-import { X, ChevronLeft, ChevronRight, Mic, Send, ChefHat } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Send, ChefHat } from 'lucide-react';
 import { audioService } from '../services/audioService';
 
-// SpeechRecognition interfaces for TypeScript
-interface SpeechRecognition extends EventTarget {
-  continuous: boolean;
-  lang: string;
-  interimResults: boolean;
-  maxAlternatives: number;
-  start(): void;
-  stop(): void;
-  abort(): void;
-  onresult: ((this: SpeechRecognition, ev: any) => any) | null;
-  onerror: ((this: SpeechRecognition, ev: any) => any) | null;
-  onend: ((this: SpeechRecognition, ev: Event) => any) | null;
-}
-
-interface Window {
-  SpeechRecognition: new () => SpeechRecognition;
-  webkitSpeechRecognition: new () => SpeechRecognition;
-}
-
-declare const window: Window;
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 interface HandsFreeCookingModeProps {
   session: CookingSession;
@@ -41,11 +20,10 @@ const HandsFreeCookingMode: React.FC<HandsFreeCookingModeProps> = ({ session, on
   const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
   
   const [currentStep, setCurrentStep] = useState(0);
-  const [status, setStatus] = useState(t('listening'));
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isThinking, setIsThinking] = useState(false);
+  const [chatInput, setChatInput] = useState('');
   
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -56,70 +34,12 @@ const HandsFreeCookingMode: React.FC<HandsFreeCookingModeProps> = ({ session, on
     chatContainerRef.current?.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: 'smooth' });
   }, [chatHistory]);
 
-  useEffect(() => {
-    if (!SpeechRecognition) {
-      setStatus(t('micNotSupported'));
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = false;
-    recognition.lang = i18n.language;
-
-    recognition.onresult = (event) => {
-      let lastTranscript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
-      
-      const nextCommands = ['next', 'التالي'];
-      const prevCommands = ['previous', 'back', 'السابق', 'ارجع'];
-
-      if (nextCommands.some(cmd => lastTranscript.includes(cmd))) {
-        goNext();
-      } else if (prevCommands.some(cmd => lastTranscript.includes(cmd))) {
-        goPrev();
-      } else {
-        handleSendMessage(lastTranscript);
-      }
-    };
-
-    recognition.onerror = (event) => {
-      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-        setStatus(t('micPermissionDenied'));
-        recognitionRef.current = null;
-      } else {
-        console.error('Speech recognition error:', event.error);
-      }
-    };
-    
-    recognition.onend = () => {
-        if (recognitionRef.current) {
-            try { recognition.start(); } catch(e) { console.error("Could not restart recognition", e); }
-        }
-    };
-
-    try {
-      recognition.start();
-      recognitionRef.current = recognition;
-    } catch(e) {
-      console.error("Speech recognition could not be started: ", e);
-      setStatus(t('micNotSupported'));
-    }
-
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.onend = null; // Prevent restart on component unmount
-        recognitionRef.current.stop();
-        recognitionRef.current = null;
-      }
-    };
-  }, [i18n.language, t]);
 
   const handleSendMessage = async (message: string) => {
     if (!message || isThinking) return;
 
     setChatHistory(prev => [...prev, { role: 'user', text: message }]);
     setIsThinking(true);
-    setStatus(t('chefIsTyping'));
 
     try {
       const response = await chat.sendMessage({ message });
@@ -129,8 +49,14 @@ const HandsFreeCookingMode: React.FC<HandsFreeCookingModeProps> = ({ session, on
       setChatHistory(prev => [...prev, { role: 'model', text: t('chatError') }]);
     } finally {
       setIsThinking(false);
-      setStatus(t('listening'));
     }
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    audioService.playClick();
+    handleSendMessage(chatInput.trim());
+    setChatInput('');
   };
 
   const goNext = () => {
@@ -186,7 +112,7 @@ const HandsFreeCookingMode: React.FC<HandsFreeCookingModeProps> = ({ session, on
         </div>
 
         {/* Right Side: Chat */}
-        <div className="md:w-1/2 lg:w-2/5 flex flex-col bg-white/5 rounded-lg p-4 overflow-hidden h-full">
+        <div className="h-96 md:h-full md:w-1/2 lg:w-2/5 flex flex-col bg-white/5 rounded-lg p-4 overflow-hidden">
           <div ref={chatContainerRef} className="flex-grow space-y-4 overflow-y-auto pr-2 custom-scrollbar">
             {chatHistory.map((msg, index) => (
               <motion.div
@@ -220,11 +146,28 @@ const HandsFreeCookingMode: React.FC<HandsFreeCookingModeProps> = ({ session, on
               </motion.div>
             )}
           </div>
-          <div className="flex-shrink-0 mt-4 text-center">
-            <div className="flex items-center gap-2 justify-center">
-              <Mic size={16} className={`transition-colors ${isThinking ? 'text-gray-500' : 'text-pink-300 animate-pulse'}`} />
-              <p className="text-sm text-white/70">{status}</p>
-            </div>
+          <div className="flex-shrink-0 mt-4">
+            <form onSubmit={handleFormSubmit} className="flex items-center gap-2">
+                <input
+                    type="text"
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    placeholder={t('askQuestion')}
+                    className="flex-grow bg-white/10 border border-white/20 rounded-full py-2 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 disabled:opacity-50"
+                    disabled={isThinking}
+                    autoComplete="off"
+                />
+                <motion.button
+                    type="submit"
+                    disabled={isThinking || !chatInput.trim()}
+                    className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-purple-600 rounded-full disabled:opacity-50"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    aria-label={t('askQuestion')}
+                >
+                    <Send size={20} />
+                </motion.button>
+            </form>
           </div>
         </div>
       </div>

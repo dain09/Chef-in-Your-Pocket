@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-// FIX: Removed 'Variants' import as it was causing a "not exported" error.
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { audioService } from '../services/audioService';
 import type { Recipe, Ingredient, Substitute } from '../types';
@@ -34,8 +33,7 @@ interface SubstitutesModalProps {
   langKey: 'en' | 'ar';
 }
 
-// FIX: Removed explicit 'Variants' type annotation to allow for correct type inference.
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
 };
@@ -252,7 +250,7 @@ const RecipeCard = ({ recipe, onAddToFavorites, onAddToShoppingList, onStartHand
       clearTimeout(debouncedSave.current);
     }
 
-    debouncedSave.current = setTimeout(() => {
+    debouncedSave.current = window.setTimeout(() => {
       onUpdateNote(recipe.id, newNote);
       addToast(t('toastNotesSaved'), 'success');
     }, 1000); // Debounce time: 1 second
