@@ -1,9 +1,7 @@
 import React from 'react';
-// FIX: Removed 'Variants' import as it was causing type errors. Type inference is sufficient here.
 import { motion } from 'framer-motion';
 
 const Logo = ({ className }: { className?: string }) => {
-  // FIX: Removed explicit 'Variants' type annotation to allow for better type inference by TypeScript.
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -14,14 +12,14 @@ const Logo = ({ className }: { className?: string }) => {
     },
   };
 
-  // FIX: Removed explicit 'Variants' type annotation.
   const sparkleVariants = {
     hidden: { scale: 0, rotate: -90 },
     visible: { 
       scale: 1, 
       rotate: 0,
       transition: {
-        type: 'spring',
+        // FIX: Added `as const` to ensure TypeScript infers 'spring' as a literal type, not a generic string.
+        type: 'spring' as const,
         stiffness: 260,
         damping: 20,
         delay: 0.5
@@ -33,12 +31,12 @@ const Logo = ({ className }: { className?: string }) => {
       transition: {
         duration: 2.5,
         repeat: Infinity,
-        ease: 'easeInOut',
+        // FIX: Added `as const` to ensure TypeScript infers 'easeInOut' as a literal type.
+        ease: 'easeInOut' as const,
       },
     },
   };
   
-  // FIX: Removed explicit 'Variants' type annotation.
   const hatPathVariants = {
     hidden: { pathLength: 0, opacity: 0 },
     visible: {
@@ -46,7 +44,8 @@ const Logo = ({ className }: { className?: string }) => {
         opacity: 1,
         transition: {
             duration: 1,
-            ease: 'easeInOut'
+            // FIX: Added `as const` to ensure TypeScript infers 'easeInOut' as a literal type.
+            ease: 'easeInOut' as const,
         }
     }
   }

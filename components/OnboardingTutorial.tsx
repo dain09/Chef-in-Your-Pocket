@@ -117,7 +117,7 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({ onFinish }) => 
             </AnimatePresence>
         </div>
 
-        <div className="text-center h-24">
+        <div className="text-center min-h-24">
             <AnimatePresence mode="wait">
                 <motion.div
                     key={currentStep + '-text'}

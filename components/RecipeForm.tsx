@@ -265,7 +265,7 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onRecipeSubmit, onPlanSubmit, o
             <p className="text-pink-900/70 mt-2">{t('tagline')}</p>
           </div>
           
-          <GlassCard className="p-1 grid grid-cols-2 sm:grid-cols-4 items-center gap-1 rounded-full mx-auto w-full">
+          <GlassCard className="p-1 grid grid-cols-2 sm:grid-cols-4 items-center gap-1 rounded-full mx-auto">
             <ModeButton active={mode === 'recipe'} onClick={() => setMode('recipe')}><ChefHat size={18}/> {t('singleRecipe')}</ModeButton>
             <ModeButton active={mode === 'remix'} onClick={() => setMode('remix')}><Recycle size={18}/> {t('leftoverRemix')}</ModeButton>
             <ModeButton active={mode === 'plan'} onClick={() => setMode('plan')}><CalendarDays size={18}/> {t('weeklyPlan')}</ModeButton>
