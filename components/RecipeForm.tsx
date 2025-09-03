@@ -126,9 +126,9 @@ const ImageScanModal: React.FC<ImageScanModalProps> = ({ onClose, onScanComplete
 const ModeButton: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode; }> = ({ active, onClick, children }) => (
     <button
         onClick={() => { audioService.playPop(); onClick(); }}
-        className={`relative px-2 sm:px-3 py-2 text-xs sm:text-sm font-semibold rounded-full transition-colors w-full ${active ? 'text-pink-800' : 'text-pink-900/60 hover:text-pink-900'}`}
+        className={`relative px-3 py-3 text-sm font-semibold rounded-xl transition-colors w-full ${active ? 'text-pink-800' : 'text-pink-900/60 hover:text-pink-900'}`}
     >
-        {active && <motion.div layoutId="formModePill" className="absolute inset-0 bg-white/50 rounded-full" />}
+        {active && <motion.div layoutId="formModePill" className="absolute inset-0 bg-white/50 rounded-xl" />}
         <span className="relative z-10 flex items-center justify-center gap-2">{children}</span>
     </button>
 );
@@ -265,7 +265,7 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onRecipeSubmit, onPlanSubmit, o
             <p className="text-pink-900/70 mt-2">{t('tagline')}</p>
           </div>
           
-          <GlassCard className="p-1 grid grid-cols-2 sm:grid-cols-4 items-center gap-1 rounded-full mx-auto">
+          <GlassCard className="p-2 grid grid-cols-2 sm:grid-cols-4 items-center gap-2 rounded-2xl mx-auto">
             <ModeButton active={mode === 'recipe'} onClick={() => setMode('recipe')}><ChefHat size={18}/> {t('singleRecipe')}</ModeButton>
             <ModeButton active={mode === 'remix'} onClick={() => setMode('remix')}><Recycle size={18}/> {t('leftoverRemix')}</ModeButton>
             <ModeButton active={mode === 'plan'} onClick={() => setMode('plan')}><CalendarDays size={18}/> {t('weeklyPlan')}</ModeButton>
