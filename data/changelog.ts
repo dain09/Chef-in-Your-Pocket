@@ -1,15 +1,25 @@
-import { Recycle, Search, Youtube, Zap, Sparkles, Archive } from 'lucide-react';
+import { Recycle, Search, Youtube, Zap, Sparkles, Archive, CalendarDays } from 'lucide-react';
 
-export const LATEST_CHANGELOG_VERSION = '2.0.0';
+export const LATEST_CHANGELOG_VERSION = '2.2.0';
 
 export const changelog = [
     {
-        version: '2.0.0',
+        version: '2.2.0',
         title: {
-            en: 'The 2.0 Comprehensive Upgrade!',
-            ar: 'الترقية الشاملة 2.0!',
+            en: 'The Magic Touch Upgrade!',
+            ar: 'ترقية اللمسة السحرية!',
         },
         features: [
+            {
+                icon: Sparkles,
+                title: { en: 'A Living, Breathing Logo', ar: 'شعار حي ومتجدد' },
+                description: { en: 'Our app icon is now more alive than ever, with a fun new animation to greet you!', ar: 'أيقونة تطبيقنا أصبحت الآن أكثر حيوية من أي وقت مضى، مع حركة جديدة وممتعة للترحيب بك!' },
+            },
+            {
+                icon: CalendarDays,
+                title: { en: 'Weekly Meal Planner', ar: 'مخطط الوجبات الأسبوعي' },
+                description: { en: 'Plan your meals for the week with one click. Get a full schedule and a unified shopping list!', ar: 'خطط وجباتك للأسبوع بنقرة واحدة. احصل على جدول كامل وقائمة تسوق موحدة!' },
+            },
             {
                 icon: Archive,
                 title: { en: 'Your Smart Pantry', ar: 'خزينتك الذكية' },
@@ -34,11 +44,6 @@ export const changelog = [
                 icon: Youtube,
                 title: { en: 'Reliable Video Search', ar: 'بحث فيديو موثوق' },
                 description: { en: 'The "Watch Tutorial" button now takes you directly to a YouTube search, giving you the best and latest videos for every recipe.', ar: 'زر "شاهد الشرح" ينقلك الآن مباشرة إلى بحث يوتيوب، مما يمنحك أفضل وأحدث الفيديوهات لكل وصفة.' },
-            },
-            {
-                icon: Sparkles,
-                title: { en: 'Redesigned Interface', ar: 'واجهة مُعاد تصميمها' },
-                description: { en: 'The "Surprise Me" button is now a fun, dedicated icon, making the main form cleaner and more intuitive.', ar: 'أصبح زر "فاجئني" الآن أيقونة مخصصة وممتعة، مما يجعل الواجهة الرئيسية أكثر تنظيمًا وسهولة.' },
             },
         ],
     },

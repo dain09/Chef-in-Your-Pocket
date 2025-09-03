@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { generateRecipe, remixRecipe, identifyIngredientsFromImage, generateMenu, startCookingChat, searchRecipeByName, remixLeftovers } from './services/geminiService';
-import type { Recipe, Ingredient, LoadingMessages, Menu, PantryItem } from './types';
+import { generateRecipe, remixRecipe, identifyIngredientsFromImage, generateMenu, startCookingChat, searchRecipeByName, remixLeftovers, generateWeeklyMealPlan } from './services/geminiService';
+import type { Recipe, Ingredient, LoadingMessages, Menu, PantryItem, MealPlan, RecipeNotes } from './types';
 import type { Chat } from '@google/genai';
 
 
@@ -24,12 +24,13 @@ import { audioService } from './services/audioService';
 import { Star, Soup, Archive } from 'lucide-react';
 import OnboardingTutorial from './components/OnboardingTutorial';
 import Footer from './components/Footer';
-import { ToastProvider } from './contexts/ToastContext';
+import { ToastProvider, useToast } from './contexts/ToastContext';
 import ToastContainer from './components/ToastContainer';
 import WhatsNewModal from './components/WhatsNewModal';
 import { LATEST_CHANGELOG_VERSION } from './data/changelog';
 import SupportBanner from './components/SupportBanner';
 import PantryManager from './components/PantryManager';
+import MealPlanCard from './components/MealPlanCard';
 
 
 export interface CookingSession {
@@ -47,17 +48,20 @@ const categoryColorMap: Record<Recipe['category'], string> = {
     'General': 'rgba(167, 139, 250, 0.4)',    // violet-400
 };
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const { addToast } = useToast();
   const [showSplash, setShowSplash] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState<LoadingMessages>('generating');
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [menu, setMenu] = useState<Menu | null>(null);
+  const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [favorites, setFavorites] = useLocalStorage<Recipe[]>('chef-favorites', []);
   const [shoppingList, setShoppingList] = useLocalStorage<string[]>('chef-shopping-list', []);
   const [pantryItems, setPantryItems] = useLocalStorage<PantryItem[]>('chef-pantry', []);
+  const [recipeNotes, setRecipeNotes] = useLocalStorage<RecipeNotes>('chef-recipe-notes', {});
   const [cookingSession, setCookingSession] = useState<CookingSession | null>(null);
   const [activeView, setActiveView] = useState<'home' | 'favorites' | 'pantry'>('home');
   const [backgroundColor, setBackgroundColor] = useState<string | null>(null);
@@ -71,8 +75,6 @@ const App: React.FC = () => {
   }, []);
   
   useEffect(() => {
-    // Show "What's New" only after the user has seen the initial tutorial
-    // and if the current version is newer than the last seen version.
     if (hasSeenTutorial && LATEST_CHANGELOG_VERSION > lastSeenVersion) {
         setShowWhatsNew(true);
     }
@@ -95,13 +97,18 @@ const App: React.FC = () => {
     setShowWhatsNew(false);
     setLastSeenVersion(LATEST_CHANGELOG_VERSION);
   };
+  
+  const resetMainView = () => {
+      setRecipe(null);
+      setMenu(null);
+      setMealPlan(null);
+      setError(null);
+  }
 
   const handleRecipeGeneration = useCallback(async (ingredients: string, cuisine: string, allergies: string, diet: string) => {
     setIsLoading(true);
     setLoadingMessage('generating');
-    setRecipe(null);
-    setMenu(null);
-    setError(null);
+    resetMainView();
     try {
       const newRecipe = await generateRecipe(ingredients, cuisine, allergies, diet);
       setRecipe(newRecipe);
@@ -115,9 +122,7 @@ const App: React.FC = () => {
   const handleRecipeSearch = useCallback(async (recipeName: string) => {
     setIsLoading(true);
     setLoadingMessage('generating');
-    setRecipe(null);
-    setMenu(null);
-    setError(null);
+    resetMainView();
     try {
       const newRecipe = await searchRecipeByName(recipeName);
       setRecipe(newRecipe);
@@ -131,9 +136,7 @@ const App: React.FC = () => {
   const handleLeftoverRemix = useCallback(async (ingredients: string) => {
     setIsLoading(true);
     setLoadingMessage('remixingLeftovers');
-    setRecipe(null);
-    setMenu(null);
-    setError(null);
+    resetMainView();
     try {
       const newRecipe = await remixLeftovers(ingredients);
       setRecipe(newRecipe);
@@ -144,15 +147,13 @@ const App: React.FC = () => {
     }
   }, [t]);
 
-  const handleMenuGeneration = useCallback(async (occasion: string) => {
+  const handlePlanGeneration = useCallback(async (prompt: string) => {
     setIsLoading(true);
-    setLoadingMessage('planning');
-    setRecipe(null);
-    setMenu(null);
-    setError(null);
+    setLoadingMessage('planningWeek');
+    resetMainView();
     try {
-      const newMenu = await generateMenu(occasion);
-      setMenu(newMenu);
+      const newPlan = await generateWeeklyMealPlan(prompt);
+      setMealPlan(newPlan);
     } catch (err: any) {
       setError(t(err.message) || t("errorFailedToGenerate"));
     } finally {
@@ -196,8 +197,7 @@ const App: React.FC = () => {
   const handleViewChange = (view: 'home' | 'favorites' | 'pantry') => {
     audioService.playClick();
     if (view === 'home') {
-      setRecipe(null);
-      setMenu(null);
+      resetMainView();
     }
     setActiveView(view);
   }
@@ -222,12 +222,12 @@ const App: React.FC = () => {
       });
   }, [setShoppingList, i18n.language]);
   
-  const handleAddMenuToShoppingList = useCallback((menu: Menu) => {
+  const handleAddMenuToShoppingList = useCallback((menuToShop: Menu) => {
     const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
     const allIngredients = [
-      ...menu.appetizer.ingredients,
-      ...menu.mainCourse.ingredients,
-      ...menu.dessert.ingredients,
+      ...menuToShop.appetizer.ingredients,
+      ...menuToShop.mainCourse.ingredients,
+      ...menuToShop.dessert.ingredients,
     ];
     const ingredientNames = allIngredients.map(ing => `${ing.amount[langKey]} ${ing.name[langKey]}`);
      setShoppingList(prev => {
@@ -235,6 +235,18 @@ const App: React.FC = () => {
         return [...prev, ...newItems];
       });
   }, [setShoppingList, i18n.language]);
+
+  const handleAddPlanToShoppingList = useCallback((plan: MealPlan) => {
+    const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
+    const allIngredients = plan.plan.flatMap(meal => meal.recipe.ingredients);
+    const ingredientNames = allIngredients.map(ing => `${ing.amount[langKey]} ${ing.name[langKey]}`);
+    
+    setShoppingList(prev => {
+        const uniqueNewItems = new Set([...prev, ...ingredientNames]);
+        return Array.from(uniqueNewItems);
+    });
+    addToast(t('toastShoppingListGenerated'), 'success');
+  }, [setShoppingList, i18n.language, addToast, t]);
 
 
   const handleClearShoppingList = useCallback(() => {
@@ -252,6 +264,13 @@ const App: React.FC = () => {
   const handleRemoveFavorite = (recipeId: string) => {
       setFavorites(prev => prev.filter(fav => fav.id !== recipeId));
   }
+
+  const handleUpdateNote = (recipeId: string, note: string) => {
+    setRecipeNotes(prev => ({
+      ...prev,
+      [recipeId]: note,
+    }));
+  };
   
   const handleStartCookingSession = (recipeToCook: Recipe) => {
     const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
@@ -266,15 +285,13 @@ const App: React.FC = () => {
 
   const handleResetHomeView = () => {
     audioService.playClick();
-    setRecipe(null);
-    setMenu(null);
-    setError(null);
+    resetMainView();
   }
 
   const isCurrentRecipeFavorite = favorites.some(fav => fav.id === recipe?.id);
 
   return (
-    <ToastProvider>
+    <>
       <AnimatePresence>
         {!hasSeenTutorial && !showSplash && <OnboardingTutorial onFinish={() => setHasSeenTutorial(true)} />}
       </AnimatePresence>
@@ -348,7 +365,7 @@ const App: React.FC = () => {
               {activeView === 'home' ? (
                 <motion.div key="home-view" className="flex-grow flex flex-col">
                   <AnimatePresence mode="wait">
-                    {!recipe && !menu && !error && (
+                    {!recipe && !menu && !mealPlan && !error && (
                       <motion.div
                         key="form"
                         initial={{ opacity: 0, y: 30 }}
@@ -358,7 +375,7 @@ const App: React.FC = () => {
                       >
                         <RecipeForm 
                             onRecipeSubmit={handleRecipeGeneration} 
-                            onMenuSubmit={handleMenuGeneration} 
+                            onPlanSubmit={handlePlanGeneration} 
                             onRecipeSearch={handleRecipeSearch}
                             onLeftoverRemix={handleLeftoverRemix}
                             isLoading={isLoading} 
@@ -369,7 +386,7 @@ const App: React.FC = () => {
                       </motion.div>
                     )}
 
-                    {recipe && !menu && !isLoading && (
+                    {recipe && (
                       <motion.div
                         key="recipe"
                         initial={{ opacity: 0, y: 30 }}
@@ -384,6 +401,8 @@ const App: React.FC = () => {
                           onStartHandsFree={handleStartCookingSession}
                           isFavorite={isCurrentRecipeFavorite}
                           onRemix={handleRemixRecipe}
+                          notes={recipeNotes[recipe.id] || ''}
+                          onUpdateNote={handleUpdateNote}
                         />
                          <motion.button
                             onClick={handleResetHomeView}
@@ -396,15 +415,15 @@ const App: React.FC = () => {
                       </motion.div>
                     )}
                     
-                    {menu && !isLoading && (
+                    {mealPlan && (
                         <motion.div
-                            key="menu"
+                            key="mealPlan"
                             initial={{ opacity: 0, y: 30 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -30 }}
                             transition={{ duration: 0.5, ease: 'easeOut' }}
                         >
-                            <MenuCard menu={menu} onAddToShoppingList={handleAddMenuToShoppingList} />
+                            <MealPlanCard mealPlan={mealPlan} onGenerateShoppingList={handleAddPlanToShoppingList} />
                             <motion.button
                                 onClick={handleResetHomeView}
                                 className="mt-8 mx-auto block px-6 py-2 bg-black/10 text-pink-900 font-semibold rounded-lg hover:bg-black/20 transition-colors"
@@ -416,7 +435,7 @@ const App: React.FC = () => {
                         </motion.div>
                     )}
 
-                    {error && !isLoading && (
+                    {error && (
                         <motion.div 
                             key="error"
                             className="mt-8 text-center"
@@ -464,8 +483,17 @@ const App: React.FC = () => {
         <Footer />
         <ShoppingList items={shoppingList} onClear={handleClearShoppingList} onUpdateItems={setShoppingList} />
       </div>
-    </ToastProvider>
+    </>
   );
-};
+}
+
+
+const App: React.FC = () => {
+    return (
+        <ToastProvider>
+            <AppContent />
+        </ToastProvider>
+    )
+}
 
 export default App;

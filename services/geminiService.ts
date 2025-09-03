@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type, Chat } from "@google/genai";
-import type { Recipe, Ingredient, Substitute, Menu, Pairing, MultilingualString } from '../types';
+import type { Recipe, Ingredient, Substitute, Menu, Pairing, MultilingualString, MealPlan } from '../types';
 
 // Per @google/genai guidelines, the API key must be sourced directly from `process.env.API_KEY`.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
@@ -84,6 +84,25 @@ const menuSchema = {
         dessert: recipeSchema,
     },
     required: ["occasion", "appetizer", "mainCourse", "dessert"],
+};
+
+const mealPlanSchema = {
+    type: Type.OBJECT,
+    properties: {
+        title: { ...multilingualStringSchema, description: "A creative title for the meal plan, in both English and Arabic." },
+        plan: {
+            type: Type.ARRAY,
+            items: {
+                type: Type.OBJECT,
+                properties: {
+                    day: { ...multilingualStringSchema, description: "The day for this meal, e.g., {en: 'Monday Dinner', ar: 'عشاء الإثنين'}." },
+                    recipe: recipeSchema
+                },
+                required: ["day", "recipe"]
+            }
+        }
+    },
+    required: ["title", "plan"]
 };
 
 
@@ -525,6 +544,51 @@ export const getCookingTip = async (): Promise<MultilingualString> => {
             en: "Reading a recipe fully before you start is the first step to success.",
             ar: "قراءة الوصفة بالكامل قبل البدء هي أول خطوة نحو النجاح."
         };
+    }
+};
+
+export const generateWeeklyMealPlan = async (userPrompt: string): Promise<MealPlan> => {
+    const prompt = `
+        You are an expert meal planner and world-class chef, "Chef AI".
+        Your task is to create a complete, cohesive weekly meal plan based on the user's request.
+
+        **CRITICAL INSTRUCTION**: Your response MUST be a single, valid JSON object following the provided meal plan schema. For EVERY text field within each recipe (names, descriptions, steps, etc.), you MUST provide an object with two keys: 'en' for English and 'ar' for Arabic.
+
+        **CRITICAL DIETARY RESTRICTION**: ALL recipes in the plan MUST NOT contain any pork, pork-derived products (like gelatin, lard), or any form of alcohol (like wine, beer, liquor) as an ingredient. This is a strict requirement.
+
+        User's Request: "${userPrompt}"
+
+        Your mission:
+        - Generate a meal plan that fulfills the user's request (e.g., if they ask for 5 dinners, provide 5 dinner recipes).
+        - Create a creative and appealing title for the overall meal plan.
+        - For each meal in the plan, provide a day/meal identifier (e.g., "Monday Dinner", "Day 1 Lunch") and a complete recipe object as defined in the schema.
+        - Each recipe must be unique and appropriate for the plan. Do not generate images or pairings for these recipes to ensure speed.
+        - Do not include any text, greetings, or explanations outside the main JSON object.
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: 'application/json',
+                responseSchema: mealPlanSchema,
+            },
+        });
+
+        const text = response.text;
+        const mealPlanData: MealPlan = JSON.parse(text);
+
+        // Add unique IDs to each recipe within the plan
+        mealPlanData.plan.forEach((meal, index) => {
+            meal.recipe.id = new Date().toISOString() + `-plan-${index}`;
+        });
+
+        return mealPlanData;
+
+    } catch (error) {
+        console.error("Error generating meal plan from Gemini:", error);
+        throw new Error("errorFailedToGenerate");
     }
 };
 

@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -8,7 +5,7 @@ import { cuisines } from '../data/cuisines';
 import { diets } from '../data/diets';
 import GlassCard from './GlassCard';
 import { audioService } from '../services/audioService';
-import { Sparkles, Camera, X, ChefHat, Utensils, Search, Recycle, Archive } from 'lucide-react';
+import { Sparkles, Camera, X, ChefHat, Utensils, Search, Recycle, Archive, CalendarDays } from 'lucide-react';
 import CustomSelect from './CustomSelect'; 
 import type { PantryItem } from '../types';
 
@@ -18,7 +15,7 @@ interface ImageScanModalProps {
   onCameraError: (error: string) => void;
 }
 
-type FormMode = 'recipe' | 'menu' | 'search' | 'remix';
+type FormMode = 'recipe' | 'remix' | 'plan' | 'search';
 
 const ImageScanModal: React.FC<ImageScanModalProps> = ({ onClose, onScanComplete, onCameraError }) => {
     const { t } = useTranslation();
@@ -129,7 +126,7 @@ const ImageScanModal: React.FC<ImageScanModalProps> = ({ onClose, onScanComplete
 const ModeButton: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode; }> = ({ active, onClick, children }) => (
     <button
         onClick={() => { audioService.playPop(); onClick(); }}
-        className={`relative px-2 sm:px-3 py-2 text-xs sm:text-sm font-semibold rounded-full transition-colors flex-grow text-center ${active ? 'text-pink-800' : 'text-pink-900/60 hover:text-pink-900'}`}
+        className={`relative px-2 sm:px-3 py-2 text-xs sm:text-sm font-semibold rounded-full transition-colors w-full ${active ? 'text-pink-800' : 'text-pink-900/60 hover:text-pink-900'}`}
     >
         {active && <motion.div layoutId="formModePill" className="absolute inset-0 bg-white/50 rounded-full" />}
         <span className="relative z-10 flex items-center justify-center gap-2">{children}</span>
@@ -139,7 +136,7 @@ const ModeButton: React.FC<{ active: boolean; onClick: () => void; children: Rea
 
 interface RecipeFormProps {
   onRecipeSubmit: (ingredients: string, cuisine: string, allergies: string, diet: string) => void;
-  onMenuSubmit: (occasion: string) => void;
+  onPlanSubmit: (prompt: string) => void;
   onRecipeSearch: (recipeName: string) => void;
   onLeftoverRemix: (ingredients: string) => void;
   isLoading: boolean;
@@ -148,7 +145,7 @@ interface RecipeFormProps {
   pantryItems: PantryItem[];
 }
 
-const RecipeForm: React.FC<RecipeFormProps> = ({ onRecipeSubmit, onMenuSubmit, onRecipeSearch, onLeftoverRemix, isLoading, onAnalyzeImage, setError, pantryItems }) => {
+const RecipeForm: React.FC<RecipeFormProps> = ({ onRecipeSubmit, onPlanSubmit, onRecipeSearch, onLeftoverRemix, isLoading, onAnalyzeImage, setError, pantryItems }) => {
   const { t, i18n } = useTranslation();
   const [mode, setMode] = useState<FormMode>('recipe');
   const [mainInput, setMainInput] = useState(''); // Used for ingredients, occasion, and recipe name search
@@ -165,8 +162,8 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onRecipeSubmit, onMenuSubmit, o
         const selectedCuisine = cuisines.find(c => c.value === cuisineValue);
         const cuisineForPrompt = selectedCuisine ? selectedCuisine.en : cuisineValue;
         onRecipeSubmit(mainInput, cuisineForPrompt, allergies, diet);
-      } else if (mode === 'menu') {
-        onMenuSubmit(mainInput);
+      } else if (mode === 'plan') {
+        onPlanSubmit(mainInput);
       } else if (mode === 'search') {
         onRecipeSearch(mainInput);
       } else { // mode === 'remix'
@@ -214,6 +211,35 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onRecipeSubmit, onMenuSubmit, o
     return sorted.map(d => ({ value: d.value, label: d[langKey] }));
   }, [langKey]);
 
+  const getLabel = () => {
+    switch (mode) {
+        case 'recipe': return t('availableIngredients');
+        case 'plan': return t('weeklyPlanDescription');
+        case 'search': return t('searchByName');
+        case 'remix': return t('leftoverIngredients');
+        default: return '';
+    }
+  };
+
+  const getPlaceholder = () => {
+    switch (mode) {
+        case 'recipe': return t('ingredientsPlaceholder');
+        case 'plan': return t('weeklyPlanPlaceholder');
+        case 'search': return t('recipeNamePlaceholder');
+        case 'remix': return t('leftoverPlaceholder');
+        default: return '';
+    }
+  };
+
+  const getButtonText = () => {
+    switch (mode) {
+        case 'recipe': return t('getRecipe');
+        case 'plan': return t('getWeeklyPlan');
+        case 'search': return t('searchForRecipe');
+        case 'remix': return t('getRemix');
+        default: return '';
+    }
+  };
 
   return (
     <>
@@ -239,10 +265,10 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onRecipeSubmit, onMenuSubmit, o
             <p className="text-pink-900/70 mt-2">{t('tagline')}</p>
           </div>
           
-          <GlassCard className="p-1 flex items-center gap-1 rounded-full mx-auto w-full">
+          <GlassCard className="p-1 grid grid-cols-2 sm:grid-cols-4 items-center gap-1 rounded-full mx-auto w-full">
             <ModeButton active={mode === 'recipe'} onClick={() => setMode('recipe')}><ChefHat size={18}/> {t('singleRecipe')}</ModeButton>
             <ModeButton active={mode === 'remix'} onClick={() => setMode('remix')}><Recycle size={18}/> {t('leftoverRemix')}</ModeButton>
-            <ModeButton active={mode === 'menu'} onClick={() => setMode('menu')}><Utensils size={18}/> {t('menuPlanner')}</ModeButton>
+            <ModeButton active={mode === 'plan'} onClick={() => setMode('plan')}><CalendarDays size={18}/> {t('weeklyPlan')}</ModeButton>
             <ModeButton active={mode === 'search'} onClick={() => setMode('search')}><Search size={18}/> {t('searchByName')}</ModeButton>
           </GlassCard>
           
@@ -258,7 +284,7 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onRecipeSubmit, onMenuSubmit, o
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <label htmlFor="main-input" className="block text-sm font-medium text-pink-900/90">
-                    {mode === 'recipe' ? t('availableIngredients') : mode === 'menu' ? t('occasionDescription') : mode === 'search' ? t('searchByName') : t('leftoverIngredients')}
+                    {getLabel()}
                   </label>
                   <div className="flex items-center gap-4">
                      <div className="flex items-center gap-2 flex-wrap justify-end">
@@ -305,7 +331,7 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onRecipeSubmit, onMenuSubmit, o
                   onChange={(e) => setMainInput(e.target.value)}
                   rows={mode === 'recipe' || mode === 'remix' ? 4 : 2}
                   className="w-full p-3 bg-white/30 border border-pink-500/30 rounded-lg text-pink-900 placeholder-pink-900/50 focus:ring-2 focus:ring-pink-400 focus:outline-none transition-shadow resize-none"
-                  placeholder={mode === 'recipe' ? t('ingredientsPlaceholder') : mode === 'menu' ? t('occasionPlaceholder') : mode === 'search' ? t('recipeNamePlaceholder') : t('leftoverPlaceholder')}
+                  placeholder={getPlaceholder()}
                   whileFocus={{ scale: 1.02, boxShadow: '0 0 10px rgba(255, 255, 255, 0.1)' }}
                 />
               </div>
@@ -362,7 +388,7 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onRecipeSubmit, onMenuSubmit, o
                 whileHover={{ scale: isLoading ? 1 : 1.05, y: isLoading ? 0 : -2, boxShadow: '0 0 20px rgba(251, 146, 60, 0.7)' }}
                 whileTap={{ scale: isLoading ? 1 : 0.98 }}
               >
-                {isLoading ? t('generating') : (mode === 'recipe' ? t('getRecipe') : mode === 'menu' ? t('getMenu') : mode === 'search' ? t('searchForRecipe') : t('getRemix'))}
+                {isLoading ? t('generating') : getButtonText()}
               </motion.button>
           </div>
         </motion.form>

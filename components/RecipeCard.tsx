@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { audioService } from '../services/audioService';
 import type { Recipe, Ingredient, Substitute } from '../types';
 import GlassCard from './GlassCard';
-import { Heart, ListPlus, ChefHat, VenetianMask, BookOpen, PlayCircle, Apple, BrainCircuit, Youtube, Wand2, X, GlassWater, Share2 } from 'lucide-react';
+import { Heart, ListPlus, ChefHat, VenetianMask, BookOpen, PlayCircle, Apple, BrainCircuit, Youtube, Wand2, X, GlassWater, Share2, NotebookText } from 'lucide-react';
 import { parseIngredient } from '../utils/ingredientParser';
 import { getIngredientSubstitutes } from '../services/geminiService';
 import { useToast } from '../contexts/ToastContext';
@@ -17,6 +17,8 @@ interface RecipeCardProps {
   onStartHandsFree: (recipe: Recipe) => void;
   isFavorite: boolean;
   onRemix: (remixPrompt: string) => void;
+  notes: string;
+  onUpdateNote: (recipeId: string, note: string) => void;
 }
 
 interface RemixModalProps {
@@ -188,24 +190,27 @@ const SubstitutesModal: React.FC<SubstitutesModalProps> = ({ ingredient, onClose
   );
 };
 
-const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onAddToFavorites, onAddToShoppingList, onStartHandsFree, isFavorite, onRemix }) => {
+const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onAddToFavorites, onAddToShoppingList, onStartHandsFree, isFavorite, onRemix, notes, onUpdateNote }) => {
   const { t, i18n } = useTranslation();
   const { addToast } = useToast();
   const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
 
   const [servings, setServings] = useState(recipe.servings);
   const [scaledIngredients, setScaledIngredients] = useState<Ingredient[]>(recipe.ingredients);
-  const [activeTab, setActiveTab] = useState<'method' | 'nutrition' | 'fun' | 'pairings'>('method');
+  const [activeTab, setActiveTab] = useState<'method' | 'nutrition' | 'fun' | 'pairings' | 'notes'>('method');
   const [isRemixing, setIsRemixing] = useState(false);
   const [selectedIngredient, setSelectedIngredient] = useState<Ingredient | null>(null);
+  const [currentNote, setCurrentNote] = useState(notes);
+  const debouncedSave = useRef<NodeJS.Timeout | null>(null);
 
 
   useEffect(() => {
     setServings(recipe.servings);
     setScaledIngredients(recipe.ingredients);
+    setCurrentNote(notes);
     setActiveTab('method');
     audioService.playSuccess();
-  }, [recipe]);
+  }, [recipe, notes]);
 
 
   const handleServingsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -236,6 +241,20 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onAddToFavorites, onAdd
     }
   };
   
+  const handleNoteChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newNote = e.target.value;
+    setCurrentNote(newNote);
+
+    if (debouncedSave.current) {
+      clearTimeout(debouncedSave.current);
+    }
+
+    debouncedSave.current = setTimeout(() => {
+      onUpdateNote(recipe.id, newNote);
+      addToast(t('toastNotesSaved'), 'success');
+    }, 1000); // Debounce time: 1 second
+  };
+
   const handleFavoriteClick = () => {
     onAddToFavorites(recipe);
     addToast(isFavorite ? t('toastRemovedFromFavorites') : t('toastAddedToFavorites'), 'success');
@@ -384,6 +403,18 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onAddToFavorites, onAdd
                 </div>
             </div>
         );
+        case 'notes': return (
+            <div>
+                <h3 className="text-xl sm:text-2xl font-bold text-pink-900 mb-4">{t('myNotes')}</h3>
+                <textarea
+                    value={currentNote}
+                    onChange={handleNoteChange}
+                    rows={8}
+                    className="w-full p-3 bg-white/30 border border-pink-500/30 rounded-lg text-pink-900 placeholder-pink-900/50 focus:ring-2 focus:ring-pink-400 focus:outline-none transition-shadow resize-y"
+                    placeholder={t('notesPlaceholder')}
+                />
+            </div>
+        );
     }
   }
 
@@ -497,6 +528,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onAddToFavorites, onAdd
                 <TabButton active={activeTab === 'pairings'} onClick={() => setActiveTab('pairings')}><GlassWater size={18} /> {t('pairings')}</TabButton>
               )}
               <TabButton active={activeTab === 'fun'} onClick={() => setActiveTab('fun')}><VenetianMask size={18} /> {t('funSection')}</TabButton>
+              <TabButton active={activeTab === 'notes'} onClick={() => setActiveTab('notes')}><NotebookText size={18} /> {t('myNotes')}</TabButton>
            </div>
            <AnimatePresence mode="wait">
               <motion.div
