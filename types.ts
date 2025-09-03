@@ -55,10 +55,7 @@ export interface Recipe {
   };
   imageUrl?: string;
   youtubeLink?: MultilingualString;
-  pairings?: {
-    alcoholic: Pairing[];
-    nonAlcoholic: Pairing[];
-  };
+  pairings?: Pairing[];
 }
 
 export interface Menu {

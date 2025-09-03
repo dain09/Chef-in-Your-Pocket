@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { audioService } from '../services/audioService';
 import type { Recipe, Ingredient, Substitute } from '../types';
 import GlassCard from './GlassCard';
-import { Heart, ListPlus, ChefHat, VenetianMask, BookOpen, PlayCircle, Apple, BrainCircuit, Youtube, Wand2, X, Wine, GlassWater } from 'lucide-react';
+import { Heart, ListPlus, ChefHat, VenetianMask, BookOpen, PlayCircle, Apple, BrainCircuit, Youtube, Wand2, X, GlassWater, Share2 } from 'lucide-react';
 import { parseIngredient } from '../utils/ingredientParser';
 import { getIngredientSubstitutes } from '../services/geminiService';
 import { getYouTubeEmbedUrl } from '../utils/youtubeParser';
@@ -131,17 +131,17 @@ const RemixModal: React.FC<RemixModalProps> = ({ onClose, onSubmit }) => {
       >
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-6">
           <div className="flex justify-between items-center">
-            <h3 className="text-xl font-bold text-pink-900">{t('addYourTouch')}</h3>
-            <button type="button" onClick={onClose} className="p-1 text-pink-900/70 hover:text-pink-900">
+            <h3 className="text-xl font-bold text-pink-100">{t('addYourTouch')}</h3>
+            <button type="button" onClick={onClose} className="p-1 text-pink-100/70 hover:text-pink-100">
               <X size={24} />
             </button>
           </div>
-          <p className="text-sm text-pink-900/80">{t('remixInstruction')}</p>
+          <p className="text-sm text-pink-100">{t('remixInstruction')}</p>
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             rows={3}
-            className="w-full p-3 bg-white/30 border border-pink-500/30 rounded-lg text-pink-900 placeholder-pink-900/50 focus:ring-2 focus:ring-pink-400 focus:outline-none transition-shadow resize-none"
+            className="w-full p-3 bg-white/30 border border-pink-500/30 rounded-lg text-pink-100 placeholder-pink-100/70 focus:ring-2 focus:ring-pink-400 focus:outline-none transition-shadow resize-none"
             placeholder={t('remixPlaceholder')}
             autoFocus
           />
@@ -149,7 +149,7 @@ const RemixModal: React.FC<RemixModalProps> = ({ onClose, onSubmit }) => {
             <motion.button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-black/10 text-pink-900 font-semibold rounded-lg hover:bg-black/20 transition-colors"
+              className="px-4 py-2 bg-black/10 text-pink-100 font-semibold rounded-lg hover:bg-black/20 transition-colors"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -300,6 +300,31 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onAddToFavorites, onAdd
     onAddToShoppingList(scaledIngredients);
     addToast(t('toastAddedToShoppingList'), 'success');
   };
+  
+  const handleShare = async () => {
+    audioService.playClick();
+    const ingredientsList = scaledIngredients.map(ing => `- ${ing.amount[langKey]} ${ing.name[langKey]}`).join('\n');
+    const shareText = `${recipe.recipeName[langKey]}\n\n${recipe.description[langKey]}\n\n${t('ingredients')}:\n${ingredientsList}\n\n${t('appName')}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: recipe.recipeName[langKey],
+          text: shareText,
+        });
+        addToast(t('toastRecipeShared'), 'success');
+      } catch (error) {
+        console.error('Error sharing:', error);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareText);
+        addToast(t('toastRecipeCopied'), 'info');
+      } catch (err) {
+        console.error('Failed to copy text: ', err);
+      }
+    }
+  };
 
   const difficultyKey = recipe.difficulty?.toLowerCase() as 'easy' | 'medium' | 'hard';
   const difficultyColors: Record<string, string> = {
@@ -374,38 +399,14 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onAddToFavorites, onAdd
         case 'pairings': return (
             <div>
                 <h3 className="text-xl sm:text-2xl font-bold text-pink-900 mb-6 text-center">{t('pairings')}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {recipe.pairings?.alcoholic && recipe.pairings.alcoholic.length > 0 && (
-                        <div className="space-y-4">
-                            <h4 className="text-lg font-semibold text-orange-600 mb-2 flex items-center gap-2">
-                                <Wine size={20} /> {t('alcoholicPairings')}
-                            </h4>
-                            <ul className="space-y-4">
-                                {recipe.pairings.alcoholic.map((p, i) => (
-                                    <li key={`alc-${i}`} className="p-3 bg-white/20 rounded-lg">
-                                        <strong className="block font-semibold text-pink-800">{p.name[langKey]}</strong>
-                                        <p className="text-sm text-pink-900/80 mt-1">{p.description[langKey]}</p>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
-                    {recipe.pairings?.nonAlcoholic && recipe.pairings.nonAlcoholic.length > 0 && (
-                         <div className="space-y-4">
-                            <h4 className="text-lg font-semibold text-cyan-600 mb-2 flex items-center gap-2">
-                                <GlassWater size={20} /> {t('nonAlcoholicPairings')}
-                            </h4>
-                            <ul className="space-y-4">
-                                {recipe.pairings.nonAlcoholic.map((p, i) => (
-                                     <li key={`non-alc-${i}`} className="p-3 bg-white/20 rounded-lg">
-                                        <strong className="block font-semibold text-pink-800">{p.name[langKey]}</strong>
-                                        <p className="text-sm text-pink-900/80 mt-1">{p.description[langKey]}</p>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
-                </div>
+                <ul className="space-y-4 max-w-2xl mx-auto">
+                    {recipe.pairings!.map((p, i) => (
+                         <li key={`pairing-${i}`} className="p-3 bg-white/20 rounded-lg">
+                            <strong className="block font-semibold text-pink-800">{p.name[langKey]}</strong>
+                            <p className="text-sm text-pink-900/80 mt-1">{p.description[langKey]}</p>
+                        </li>
+                    ))}
+                </ul>
             </div>
         );
         case 'fun': return (
@@ -530,17 +531,26 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onAddToFavorites, onAdd
                     <Wand2 className="w-5 h-5" />
                     {t('addYourTouch')}
                   </motion.button>
+                  <motion.button
+                    onClick={handleShare}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors bg-cyan-500/90 text-white hover:bg-cyan-500"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Share2 className="w-5 h-5" />
+                    {t('shareRecipe')}
+                  </motion.button>
                </div>
           </div>
         </GlassCard>
         
         {/* Tabs and Content */}
          <GlassCard className="p-4 sm:p-6">
-           <div className="flex justify-center items-center gap-1 sm:gap-4 mb-6">
+           <div className="w-full flex justify-center items-center flex-wrap gap-x-2 sm:gap-x-4 gap-y-2 mb-6">
               <TabButton active={activeTab === 'method'} onClick={() => setActiveTab('method')}><ChefHat size={18} /> {t('preparationMethod')}</TabButton>
               <TabButton active={activeTab === 'nutrition'} onClick={() => setActiveTab('nutrition')}><Apple size={18} /> {t('nutritionFacts')}</TabButton>
-              {recipe.pairings && (recipe.pairings.alcoholic.length > 0 || recipe.pairings.nonAlcoholic.length > 0) && (
-                <TabButton active={activeTab === 'pairings'} onClick={() => setActiveTab('pairings')}><Wine size={18} /> {t('pairings')}</TabButton>
+              {recipe.pairings && recipe.pairings.length > 0 && (
+                <TabButton active={activeTab === 'pairings'} onClick={() => setActiveTab('pairings')}><GlassWater size={18} /> {t('pairings')}</TabButton>
               )}
               <TabButton active={activeTab === 'fun'} onClick={() => setActiveTab('fun')}><VenetianMask size={18} /> {t('funSection')}</TabButton>
            </div>

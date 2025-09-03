@@ -93,7 +93,7 @@ const menuSchema = {
 
 const generateRecipeImage = async (recipeName: string, description: string): Promise<string | null> => {
     try {
-        const prompt = `A vibrant, delicious, professional, web-optimized food photograph of "${recipeName}". ${description}. Shot in a modern, clean style, with a simple, blurred background and shallow depth of field. Appetizing and beautifully lit.`;
+        const prompt = `A vibrant, delicious, professional food photograph of "${recipeName}". ${description}. Critically, this image must be a lightweight, compressed for web, and fast-loading JPEG. Shot in a modern, clean style, with a simple, blurred background and shallow depth of field. Appetizing and beautifully lit.`;
 
         const response = await ai.models.generateImages({
             model: 'imagen-4.0-generate-001',
@@ -126,34 +126,20 @@ const pairingSchema = {
 };
 
 const pairingsResponseSchema = {
-    type: Type.OBJECT,
-    properties: {
-        alcoholic: {
-            type: Type.ARRAY,
-            items: pairingSchema,
-            description: "A list of 2-3 alcoholic beverage pairings."
-        },
-        nonAlcoholic: {
-            type: Type.ARRAY,
-            items: pairingSchema,
-            description: "A list of 2-3 non-alcoholic beverage pairings."
-        }
-    },
-    required: ["alcoholic", "nonAlcoholic"]
+    type: Type.ARRAY,
+    items: pairingSchema
 };
 
-const getDrinkPairings = async (recipeName: string, recipeDescription: string): Promise<{ alcoholic: Pairing[]; nonAlcoholic: Pairing[]; } | null> => {
+const getDrinkPairings = async (recipeName: string, recipeDescription: string): Promise<Pairing[] | null> => {
     const prompt = `
-        You are an expert sommelier and mixologist.
-        For the recipe "${recipeName}" described as "${recipeDescription}", provide a list of perfect drink pairings.
+        You are an expert mixologist.
+        For the recipe "${recipeName}" described as "${recipeDescription}", provide a list of perfect non-alcoholic drink pairings.
 
-        **CRITICAL INSTRUCTION**: Your response must be a single, valid JSON object following the provided schema.
-        - Provide 2-3 alcoholic pairings.
-        - Provide 2-3 non-alcoholic pairings.
+        **CRITICAL INSTRUCTION**: Your response must be a single, valid JSON array of objects, following the provided schema.
+        - Provide 2-3 creative non-alcoholic pairings.
         - For each pairing, provide a name and a short description explaining why it's a good match.
         - For EVERY text field (name, description), you MUST provide an object with 'en' for English and 'ar' for Arabic.
-        - If the dish is traditionally from a culture that avoids alcohol, focus on creative non-alcoholic options and provide simple, classic alcoholic choices if appropriate.
-        - Do not include any text outside the JSON object.
+        - Do not include any text, greetings, or explanations outside the JSON array.
     `;
     try {
         const response = await ai.models.generateContent({
@@ -270,7 +256,7 @@ export const generateMenu = async (occasion: string): Promise<Menu> => {
 
         // Step 2: Generate images for all three courses and the menu occasion in parallel
         const [menuImage, appetizerImage, mainCourseImage, dessertImage] = await Promise.all([
-            generateRecipeImage(menuData.occasion.en, "A beautiful, thematic, web-optimized food spread representing this dining occasion. Professional photography with a simple, clean background."),
+            generateRecipeImage(menuData.occasion.en, "A beautiful, thematic, lightweight, web-optimized food spread representing this dining occasion. Professional photography with a simple, clean background."),
             generateRecipeImage(menuData.appetizer.recipeName.en, menuData.appetizer.description.en),
             generateRecipeImage(menuData.mainCourse.recipeName.en, menuData.mainCourse.description.en),
             generateRecipeImage(menuData.dessert.recipeName.en, menuData.dessert.description.en)
