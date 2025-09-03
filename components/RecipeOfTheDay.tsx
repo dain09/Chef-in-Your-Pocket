@@ -17,7 +17,7 @@ const SkeletonPlaceholder: React.FC<{ className?: string }> = ({ className }) =>
 
 const RecipeOfTheDaySkeleton = () => (
     <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-        <SkeletonPlaceholder className="w-full sm:w-1/3 aspect-video" />
+        <SkeletonPlaceholder className="w-full sm:w-1/3 aspect-[4/3] sm:aspect-video" />
         <div className="flex-1 w-full space-y-3">
             <SkeletonPlaceholder className="h-6 w-3/4" />
             <SkeletonPlaceholder className="h-4 w-full" />
@@ -123,7 +123,7 @@ const RecipeOfTheDay: React.FC<RecipeOfTheDayProps> = ({ onSelectRecipe }) => {
           <Sparkles className="text-yellow-400" /> {t('recipeOfTheDayTitle')}
         </h2>
         <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-          <div className="w-full sm:w-1/3 aspect-video bg-pink-200/50 flex items-center justify-center rounded-lg overflow-hidden flex-shrink-0">
+          <div className="w-full sm:w-1/3 aspect-[4/3] sm:aspect-video bg-pink-200/50 flex items-center justify-center rounded-lg overflow-hidden flex-shrink-0">
             {recipe.imageUrl ? (
               <img src={recipe.imageUrl} alt={recipe.recipeName[langKey]} className="w-full h-full object-cover" />
             ) : (

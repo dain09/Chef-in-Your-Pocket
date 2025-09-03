@@ -29,7 +29,7 @@ const RecipeDetailView: React.FC<{ recipe: Recipe, langKey: 'en' | 'ar' }> = ({ 
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
       {/* Left side: Image and details */}
       <div className="space-y-4">
-        <div className="aspect-video bg-pink-200/50 flex items-center justify-center rounded-lg overflow-hidden">
+        <div className="aspect-[4/3] sm:aspect-video bg-pink-200/50 flex items-center justify-center rounded-lg overflow-hidden">
           {recipe.imageUrl ? (
             <img src={recipe.imageUrl} alt={recipe.recipeName[langKey]} className="w-full h-full object-cover" />
           ) : (

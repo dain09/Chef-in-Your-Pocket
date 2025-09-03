@@ -1,6 +1,7 @@
 
 
 
+
 import React from 'react';
 import type { Recipe } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -71,7 +72,7 @@ const FavoritesList: React.FC<FavoritesListProps> = ({ favorites, onSelect, onRe
               >
                 <GlassCard className="p-0 h-full flex flex-col justify-between overflow-hidden">
                     <div>
-                        <div className="aspect-video bg-pink-200/50 flex items-center justify-center">
+                        <div className="aspect-[4/3] sm:aspect-video bg-pink-200/50 flex items-center justify-center">
                             {recipe.imageUrl ? (
                                 <img src={recipe.imageUrl} alt={recipe.recipeName[langKey]} className="w-full h-full object-cover" />
                             ) : (
