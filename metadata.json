@@ -1,0 +1,8 @@
+{
+  "name": "Chef in Your Pocket",
+  "description": "An immersive, cinematic web application that helps you discover world-class recipes with an interactive and fun experience, powered by Gemini.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
