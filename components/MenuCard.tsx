@@ -90,7 +90,7 @@ const MenuCard: React.FC<MenuCardProps> = ({ menu, onAddToShoppingList }) => {
       className="w-full max-w-7xl mx-auto space-y-6"
     >
       <GlassCard className="p-0 overflow-hidden">
-        <div className="relative aspect-video sm:aspect-[2.5/1] w-full">
+        <div className="relative aspect-[4/3] sm:aspect-video w-full">
             {menu.imageUrl ? (
               <img src={menu.imageUrl} alt={menu.occasion[langKey]} className="absolute inset-0 w-full h-full object-cover"/>
             ) : (

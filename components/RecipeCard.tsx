@@ -447,7 +447,7 @@ const RecipeCard = ({ recipe, onAddToFavorites, onAddToShoppingList, onStartHand
       >
         {/* Recipe Header with Image */}
         <GlassCard className="p-0 overflow-hidden">
-          <div className="relative aspect-video sm:aspect-[2.5/1] w-full">
+          <div className="relative aspect-[4/3] sm:aspect-video w-full">
             <AnimatePresence>
                 {!recipe.imageUrl ? (
                     <motion.div 
