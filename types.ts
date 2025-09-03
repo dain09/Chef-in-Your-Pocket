@@ -1,4 +1,4 @@
-export type LoadingMessages = 'generating' | 'remixing' | 'analyzing' | 'planning';
+export type LoadingMessages = 'generating' | 'remixing' | 'analyzing' | 'planning' | 'remixingLeftovers';
 
 export type MultilingualString = {
   en: string;
@@ -64,4 +64,9 @@ export interface Menu {
   mainCourse: Recipe;
   dessert: Recipe;
   imageUrl?: string;
+}
+
+export interface PantryItem {
+  id: string;
+  name: string;
 }

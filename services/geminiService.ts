@@ -261,6 +261,59 @@ export const searchRecipeByName = async (recipeNameQuery: string): Promise<Recip
       }
     };
 
+export const remixLeftovers = async (ingredients: string): Promise<Recipe> => {
+  const prompt = `
+    You are a world-class, creative chef named "Chef AI", specializing in reducing food waste.
+    Your task is to invent a delicious and complete recipe using ONLY the leftover ingredients provided by the user.
+
+    **CRITICAL INSTRUCTION**: For EVERY text field (e.g., recipeName, description, ingredient names, steps, tips, jokes), you MUST provide an object with two keys: 'en' for the English version and 'ar' for the Arabic (العربية) version.
+
+    **CRITICAL DIETARY RESTRICTION**: The recipe MUST NOT contain any pork, pork-derived products, or any form of alcohol. This is a strict requirement.
+
+    User's Leftover Ingredients: "${ingredients}"
+
+    Your creative mission:
+    - Invent a suitable recipe name.
+    - The ingredients list in your response should primarily be what the user provided. You may assume common pantry staples like salt, pepper, oil, and water are available, but do not add major new ingredients.
+    - Generate all other fields like steps, nutrition, fun facts, etc., to match this new, creative dish.
+    - Search the web to find the single best YouTube tutorial for a recipe SIMILAR to the one you invented. Include its URL in 'youtubeLink'. If none is suitable, omit the field.
+    - Your response must be a single, valid JSON object according to the schema. Do not include any text or explanations outside the JSON object.
+  `;
+
+  try {
+    // Step 1: Generate Recipe Text
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: recipeSchema,
+      },
+    });
+
+    const text = response.text;
+    const recipeData = JSON.parse(text);
+
+    // Step 2: Generate Recipe Image and Pairings in parallel
+    const [imageUrl, pairings] = await Promise.all([
+        generateRecipeImage(recipeData.recipeName.en, recipeData.description.en),
+        getDrinkPairings(recipeData.recipeName.en, recipeData.description.en)
+    ]);
+
+    // Step 3: Combine and Return
+    return {
+        ...recipeData,
+        id: new Date().toISOString(),
+        imageUrl: imageUrl || undefined,
+        pairings: pairings || undefined
+    };
+
+  } catch (error) {
+    console.error("Error remixing leftovers from Gemini:", error);
+    throw new Error("errorFailedToGenerate");
+  }
+};
+    
 export const generateMenu = async (occasion: string): Promise<Menu> => {
     const prompt = `
         You are a world-class event planner and Michelin-starred chef, "Chef AI".

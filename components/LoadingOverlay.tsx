@@ -19,6 +19,8 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ type }) => {
               return [t('generatingRecipe'), t('generatingImage')];
           case 'remixing':
               return [t('remixingRecipe')];
+          case 'remixingLeftovers':
+              return [t('remixingLeftovers')];
           case 'analyzing':
               return [t('analyzingImage')];
           case 'planning':

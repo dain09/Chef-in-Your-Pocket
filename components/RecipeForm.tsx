@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -7,8 +8,9 @@ import { cuisines } from '../data/cuisines';
 import { diets } from '../data/diets';
 import GlassCard from './GlassCard';
 import { audioService } from '../services/audioService';
-import { Sparkles, Camera, X, ChefHat, Utensils, Search } from 'lucide-react';
+import { Sparkles, Camera, X, ChefHat, Utensils, Search, Recycle, Archive } from 'lucide-react';
 import CustomSelect from './CustomSelect'; 
+import type { PantryItem } from '../types';
 
 interface ImageScanModalProps {
   onClose: () => void;
@@ -16,7 +18,7 @@ interface ImageScanModalProps {
   onCameraError: (error: string) => void;
 }
 
-type FormMode = 'recipe' | 'menu' | 'search';
+type FormMode = 'recipe' | 'menu' | 'search' | 'remix';
 
 const ImageScanModal: React.FC<ImageScanModalProps> = ({ onClose, onScanComplete, onCameraError }) => {
     const { t } = useTranslation();
@@ -127,7 +129,7 @@ const ImageScanModal: React.FC<ImageScanModalProps> = ({ onClose, onScanComplete
 const ModeButton: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode; }> = ({ active, onClick, children }) => (
     <button
         onClick={() => { audioService.playPop(); onClick(); }}
-        className={`relative px-4 py-2 text-sm sm:text-base font-semibold rounded-full transition-colors w-1/3 ${active ? 'text-pink-800' : 'text-pink-900/60 hover:text-pink-900'}`}
+        className={`relative px-2 sm:px-3 py-2 text-xs sm:text-sm font-semibold rounded-full transition-colors flex-grow text-center ${active ? 'text-pink-800' : 'text-pink-900/60 hover:text-pink-900'}`}
     >
         {active && <motion.div layoutId="formModePill" className="absolute inset-0 bg-white/50 rounded-full" />}
         <span className="relative z-10 flex items-center justify-center gap-2">{children}</span>
@@ -139,12 +141,14 @@ interface RecipeFormProps {
   onRecipeSubmit: (ingredients: string, cuisine: string, allergies: string, diet: string) => void;
   onMenuSubmit: (occasion: string) => void;
   onRecipeSearch: (recipeName: string) => void;
+  onLeftoverRemix: (ingredients: string) => void;
   isLoading: boolean;
   onAnalyzeImage: (base64: string) => Promise<string>;
   setError: (error: string | null) => void;
+  pantryItems: PantryItem[];
 }
 
-const RecipeForm: React.FC<RecipeFormProps> = ({ onRecipeSubmit, onMenuSubmit, onRecipeSearch, isLoading, onAnalyzeImage, setError }) => {
+const RecipeForm: React.FC<RecipeFormProps> = ({ onRecipeSubmit, onMenuSubmit, onRecipeSearch, onLeftoverRemix, isLoading, onAnalyzeImage, setError, pantryItems }) => {
   const { t, i18n } = useTranslation();
   const [mode, setMode] = useState<FormMode>('recipe');
   const [mainInput, setMainInput] = useState(''); // Used for ingredients, occasion, and recipe name search
@@ -163,8 +167,10 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onRecipeSubmit, onMenuSubmit, o
         onRecipeSubmit(mainInput, cuisineForPrompt, allergies, diet);
       } else if (mode === 'menu') {
         onMenuSubmit(mainInput);
-      } else { // mode === 'search'
+      } else if (mode === 'search') {
         onRecipeSearch(mainInput);
+      } else { // mode === 'remix'
+        onLeftoverRemix(mainInput);
       }
     }
   };
@@ -184,6 +190,12 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onRecipeSubmit, onMenuSubmit, o
     if (identifiedIngredients) {
         setMainInput(prev => prev ? `${prev}, ${identifiedIngredients}` : identifiedIngredients);
     }
+  };
+
+  const handleUsePantry = () => {
+    audioService.playClick();
+    const pantryIngredients = pantryItems.map(item => item.name).join(', ');
+    setMainInput(pantryIngredients);
   };
 
   const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
@@ -229,6 +241,7 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onRecipeSubmit, onMenuSubmit, o
           
           <GlassCard className="p-1 flex items-center gap-1 rounded-full mx-auto w-full">
             <ModeButton active={mode === 'recipe'} onClick={() => setMode('recipe')}><ChefHat size={18}/> {t('singleRecipe')}</ModeButton>
+            <ModeButton active={mode === 'remix'} onClick={() => setMode('remix')}><Recycle size={18}/> {t('leftoverRemix')}</ModeButton>
             <ModeButton active={mode === 'menu'} onClick={() => setMode('menu')}><Utensils size={18}/> {t('menuPlanner')}</ModeButton>
             <ModeButton active={mode === 'search'} onClick={() => setMode('search')}><Search size={18}/> {t('searchByName')}</ModeButton>
           </GlassCard>
@@ -245,26 +258,54 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onRecipeSubmit, onMenuSubmit, o
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <label htmlFor="main-input" className="block text-sm font-medium text-pink-900/90">
-                    {mode === 'recipe' ? t('availableIngredients') : mode === 'menu' ? t('occasionDescription') : t('searchByName')}
+                    {mode === 'recipe' ? t('availableIngredients') : mode === 'menu' ? t('occasionDescription') : mode === 'search' ? t('searchByName') : t('leftoverIngredients')}
                   </label>
-                  {mode === 'recipe' && (
-                    <motion.button 
-                      type="button" 
-                      onClick={() => { audioService.playPop(); setScanModalOpen(true); }}
-                      className="flex items-center gap-2 text-sm text-purple-600 font-semibold"
-                      whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                    >
-                      <Camera size={16} /> {t('scanIngredients')}
-                    </motion.button>
-                  )}
+                  <div className="flex items-center gap-4">
+                     <div className="flex items-center gap-2 flex-wrap justify-end">
+                        {mode === 'recipe' && (
+                          <motion.button 
+                            type="button" 
+                            onClick={() => { audioService.playPop(); setScanModalOpen(true); }}
+                            className="flex items-center gap-1.5 text-xs sm:text-sm text-purple-600 font-semibold"
+                            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                          >
+                            <Camera size={16} /> {t('scanIngredients')}
+                          </motion.button>
+                        )}
+                        {mode === 'recipe' && pantryItems.length > 0 && (
+                           <motion.button 
+                            type="button" 
+                            onClick={handleUsePantry}
+                            className="flex items-center gap-1.5 text-xs sm:text-sm text-purple-600 font-semibold"
+                            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                          >
+                            <Archive size={16} /> {t('usePantryIngredients')}
+                          </motion.button>
+                        )}
+                     </div>
+                     {mode === 'recipe' && (
+                        <motion.button
+                            type="button"
+                            onClick={handleSurprise}
+                            disabled={isLoading}
+                            className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-gradient-to-r from-purple-400 to-pink-500 rounded-full text-white shadow-lg disabled:opacity-50"
+                            whileHover={{ scale: isLoading ? 1 : 1.1, rotate: isLoading ? 0 : 15 }}
+                            whileTap={{ scale: isLoading ? 1 : 0.9 }}
+                            aria-label={t('surpriseMe')}
+                            title={t('surpriseMe')}
+                        >
+                            <Sparkles size={20} />
+                        </motion.button>
+                    )}
+                  </div>
                 </div>
                 <motion.textarea
                   id="main-input"
                   value={mainInput}
                   onChange={(e) => setMainInput(e.target.value)}
-                  rows={mode === 'recipe' ? 4 : 2}
+                  rows={mode === 'recipe' || mode === 'remix' ? 4 : 2}
                   className="w-full p-3 bg-white/30 border border-pink-500/30 rounded-lg text-pink-900 placeholder-pink-900/50 focus:ring-2 focus:ring-pink-400 focus:outline-none transition-shadow resize-none"
-                  placeholder={mode === 'recipe' ? t('ingredientsPlaceholder') : mode === 'menu' ? t('occasionPlaceholder') : t('recipeNamePlaceholder')}
+                  placeholder={mode === 'recipe' ? t('ingredientsPlaceholder') : mode === 'menu' ? t('occasionPlaceholder') : mode === 'search' ? t('recipeNamePlaceholder') : t('leftoverPlaceholder')}
                   whileFocus={{ scale: 1.02, boxShadow: '0 0 10px rgba(255, 255, 255, 0.1)' }}
                 />
               </div>
@@ -313,27 +354,15 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onRecipeSubmit, onMenuSubmit, o
             </motion.div>
           </AnimatePresence>
           
-          <div className="flex flex-col sm:flex-row gap-4">
-              {mode === 'recipe' ? (
-                <motion.button
-                  type="button"
-                  onClick={handleSurprise}
-                  disabled={isLoading}
-                  className="w-full flex items-center justify-center gap-2 py-3 text-lg font-bold text-white bg-gradient-to-r from-purple-400 to-pink-500 rounded-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform"
-                  whileHover={{ scale: isLoading ? 1 : 1.05, y: isLoading ? 0 : -2, boxShadow: '0 0 20px rgba(236, 72, 153, 0.7)' }}
-                  whileTap={{ scale: isLoading ? 1 : 0.98 }}
-                >
-                  <Sparkles size={20} /> {t('surpriseMe')}
-                </motion.button>
-              ) : <div className="hidden sm:block sm:w-full"></div>}
+          <div className="flex flex-col gap-4">
               <motion.button
                 type="submit"
                 disabled={isLoading || !mainInput.trim()}
-                className={`w-full py-3 text-lg font-bold text-white bg-gradient-to-r from-pink-500 to-orange-400 rounded-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform ${mode !== 'recipe' ? 'sm:col-span-2' : ''}`}
+                className="w-full py-3 text-lg font-bold text-white bg-gradient-to-r from-pink-500 to-orange-400 rounded-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform"
                 whileHover={{ scale: isLoading ? 1 : 1.05, y: isLoading ? 0 : -2, boxShadow: '0 0 20px rgba(251, 146, 60, 0.7)' }}
                 whileTap={{ scale: isLoading ? 1 : 0.98 }}
               >
-                {isLoading ? t('generating') : (mode === 'recipe' ? t('getRecipe') : mode === 'menu' ? t('getMenu') : t('searchForRecipe'))}
+                {isLoading ? t('generating') : (mode === 'recipe' ? t('getRecipe') : mode === 'menu' ? t('getMenu') : mode === 'search' ? t('searchForRecipe') : t('getRemix'))}
               </motion.button>
           </div>
         </motion.form>

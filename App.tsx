@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { generateRecipe, remixRecipe, identifyIngredientsFromImage, generateMenu, startCookingChat, searchRecipeByName } from './services/geminiService';
-import type { Recipe, Ingredient, LoadingMessages, Menu } from './types';
+import { generateRecipe, remixRecipe, identifyIngredientsFromImage, generateMenu, startCookingChat, searchRecipeByName, remixLeftovers } from './services/geminiService';
+import type { Recipe, Ingredient, LoadingMessages, Menu, PantryItem } from './types';
 import type { Chat } from '@google/genai';
 
 
@@ -21,7 +21,7 @@ import HandsFreeCookingMode from './components/HandsFreeCookingMode';
 import GlassCard from './components/GlassCard';
 import useLocalStorage from './hooks/useLocalStorage';
 import { audioService } from './services/audioService';
-import { Star, Soup } from 'lucide-react';
+import { Star, Soup, Archive } from 'lucide-react';
 import OnboardingTutorial from './components/OnboardingTutorial';
 import Footer from './components/Footer';
 import { ToastProvider } from './contexts/ToastContext';
@@ -29,6 +29,7 @@ import ToastContainer from './components/ToastContainer';
 import WhatsNewModal from './components/WhatsNewModal';
 import { LATEST_CHANGELOG_VERSION } from './data/changelog';
 import SupportBanner from './components/SupportBanner';
+import PantryManager from './components/PantryManager';
 
 
 export interface CookingSession {
@@ -56,8 +57,9 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [favorites, setFavorites] = useLocalStorage<Recipe[]>('chef-favorites', []);
   const [shoppingList, setShoppingList] = useLocalStorage<string[]>('chef-shopping-list', []);
+  const [pantryItems, setPantryItems] = useLocalStorage<PantryItem[]>('chef-pantry', []);
   const [cookingSession, setCookingSession] = useState<CookingSession | null>(null);
-  const [activeView, setActiveView] = useState<'home' | 'favorites'>('home');
+  const [activeView, setActiveView] = useState<'home' | 'favorites' | 'pantry'>('home');
   const [backgroundColor, setBackgroundColor] = useState<string | null>(null);
   const [hasSeenTutorial, setHasSeenTutorial] = useLocalStorage('chef-hasSeenTutorial', false);
   const [lastSeenVersion, setLastSeenVersion] = useLocalStorage('chef-lastSeenVersion', '0.0.0');
@@ -126,6 +128,22 @@ const App: React.FC = () => {
     }
   }, [t]);
 
+  const handleLeftoverRemix = useCallback(async (ingredients: string) => {
+    setIsLoading(true);
+    setLoadingMessage('remixingLeftovers');
+    setRecipe(null);
+    setMenu(null);
+    setError(null);
+    try {
+      const newRecipe = await remixLeftovers(ingredients);
+      setRecipe(newRecipe);
+    } catch (err: any) {
+      setError(t(err.message) || t("errorFailedToGenerate"));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [t]);
+
   const handleMenuGeneration = useCallback(async (occasion: string) => {
     setIsLoading(true);
     setLoadingMessage('planning');
@@ -175,7 +193,7 @@ const App: React.FC = () => {
     }
   }, [t]);
   
-  const handleViewChange = (view: 'home' | 'favorites') => {
+  const handleViewChange = (view: 'home' | 'favorites' | 'pantry') => {
     audioService.playClick();
     if (view === 'home') {
       setRecipe(null);
@@ -308,14 +326,18 @@ const App: React.FC = () => {
              animate={{ opacity: 1, y: 0 }}
              transition={{ duration: 0.7, delay: 2.7, ease: 'easeOut' }}
            >
-              <GlassCard className="p-1 flex items-center gap-2 rounded-full">
-                <button onClick={() => handleViewChange('home')} className={`relative px-4 py-2 text-sm sm:text-base font-semibold rounded-full transition-colors ${activeView === 'home' ? 'text-pink-800' : 'text-pink-900/60 hover:text-pink-900'}`}>
+              <GlassCard className="p-1 flex items-center gap-1 rounded-full">
+                <button onClick={() => handleViewChange('home')} className={`relative px-3 py-2 text-sm sm:text-base font-semibold rounded-full transition-colors ${activeView === 'home' ? 'text-pink-800' : 'text-pink-900/60 hover:text-pink-900'}`}>
                     {activeView === 'home' && <motion.div layoutId="activePill" className="absolute inset-0 bg-white/50 rounded-full" />}
                     <span className="relative z-10 flex items-center gap-2"><Soup size={18}/> {t('newRecipe')}</span>
                 </button>
-                 <button onClick={() => handleViewChange('favorites')} className={`relative px-4 py-2 text-sm sm:text-base font-semibold rounded-full transition-colors ${activeView === 'favorites' ? 'text-pink-800' : 'text-pink-900/60 hover:text-pink-900'}`}>
+                 <button onClick={() => handleViewChange('favorites')} className={`relative px-3 py-2 text-sm sm:text-base font-semibold rounded-full transition-colors ${activeView === 'favorites' ? 'text-pink-800' : 'text-pink-900/60 hover:text-pink-900'}`}>
                     {activeView === 'favorites' && <motion.div layoutId="activePill" className="absolute inset-0 bg-white/50 rounded-full" />}
                     <span className="relative z-10 flex items-center gap-2"><Star size={18}/> {t('myFavorites')}</span>
+                </button>
+                <button onClick={() => handleViewChange('pantry')} className={`relative px-3 py-2 text-sm sm:text-base font-semibold rounded-full transition-colors ${activeView === 'pantry' ? 'text-pink-800' : 'text-pink-900/60 hover:text-pink-900'}`}>
+                    {activeView === 'pantry' && <motion.div layoutId="activePill" className="absolute inset-0 bg-white/50 rounded-full" />}
+                    <span className="relative z-10 flex items-center gap-2"><Archive size={18}/> {t('myPantry')}</span>
                 </button>
               </GlassCard>
            </motion.div>
@@ -338,9 +360,11 @@ const App: React.FC = () => {
                             onRecipeSubmit={handleRecipeGeneration} 
                             onMenuSubmit={handleMenuGeneration} 
                             onRecipeSearch={handleRecipeSearch}
+                            onLeftoverRemix={handleLeftoverRemix}
                             isLoading={isLoading} 
                             onAnalyzeImage={handleImageAnalysis} 
                             setError={setError} 
+                            pantryItems={pantryItems}
                         />
                       </motion.div>
                     )}
@@ -412,7 +436,7 @@ const App: React.FC = () => {
                     )}
                   </AnimatePresence>
                 </motion.div>
-              ) : (
+              ) : activeView === 'favorites' ? (
                 <motion.div 
                     key="favorites-view"
                     initial={{ opacity: 0, y: 30 }}
@@ -421,6 +445,16 @@ const App: React.FC = () => {
                     transition={{ duration: 0.5, ease: 'easeInOut' }}
                 >
                     <FavoritesList favorites={favorites} onSelect={handleSelectFavorite} onRemove={handleRemoveFavorite} />
+                </motion.div>
+              ) : (
+                <motion.div 
+                    key="pantry-view"
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -30 }}
+                    transition={{ duration: 0.5, ease: 'easeInOut' }}
+                >
+                    <PantryManager pantryItems={pantryItems} setPantryItems={setPantryItems} />
                 </motion.div>
               )}
             </AnimatePresence>
