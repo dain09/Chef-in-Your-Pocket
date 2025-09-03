@@ -1,11 +1,13 @@
 
 
+
 import React from 'react';
 import type { Recipe } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import GlassCard from './GlassCard';
 import { X, Eye, ImageOff } from 'lucide-react';
+import { useToast } from '../contexts/ToastContext';
 
 interface FavoritesListProps {
   favorites: Recipe[];
@@ -33,7 +35,14 @@ const itemVariants = {
 
 const FavoritesList: React.FC<FavoritesListProps> = ({ favorites, onSelect, onRemove }) => {
   const { t, i18n } = useTranslation();
+  const { addToast } = useToast();
   const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
+
+  const handleRemoveClick = (e: React.MouseEvent, recipeId: string) => {
+    e.stopPropagation();
+    onRemove(recipeId);
+    addToast(t('toastRemovedFromFavorites'), 'info');
+  };
 
   if (favorites.length === 0) {
     return (
@@ -83,10 +92,7 @@ const FavoritesList: React.FC<FavoritesListProps> = ({ favorites, onSelect, onRe
                            <Eye size={16}/> {t('viewRecipe')}
                         </motion.button>
                         <motion.button
-                          onClick={(e) => {
-                              e.stopPropagation();
-                              onRemove(recipe.id);
-                          }}
+                          onClick={(e) => handleRemoveClick(e, recipe.id)}
                           className="text-red-500 hover:text-red-400 p-2 bg-black/10 rounded-md"
                           whileHover={{ scale: 1.1, backgroundColor: 'rgba(239, 68, 68, 0.2)' }} whileTap={{ scale: 0.9 }}
                         >

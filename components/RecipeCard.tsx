@@ -8,6 +8,7 @@ import { Heart, ListPlus, ChefHat, VenetianMask, BookOpen, PlayCircle, Apple, Br
 import { parseIngredient } from '../utils/ingredientParser';
 import { getIngredientSubstitutes } from '../services/geminiService';
 import { getYouTubeEmbedUrl } from '../utils/youtubeParser';
+import { useToast } from '../contexts/ToastContext';
 
 
 interface RecipeCardProps {
@@ -74,7 +75,7 @@ const VideoModal: React.FC<VideoModalProps> = ({ onClose, videoUrl }) => {
                 src={embedUrl}
                 title="YouTube video player"
                 frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
             ></iframe>
         </motion.div>
@@ -242,6 +243,7 @@ const SubstitutesModal: React.FC<SubstitutesModalProps> = ({ ingredient, onClose
 
 const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onAddToFavorites, onAddToShoppingList, onStartHandsFree, isFavorite, onRemix }) => {
   const { t, i18n } = useTranslation();
+  const { addToast } = useToast();
   const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
 
   const [servings, setServings] = useState(recipe.servings);
@@ -288,6 +290,16 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onAddToFavorites, onAdd
         setScaledIngredients(recipe.ingredients);
     }
   };
+  
+  const handleFavoriteClick = () => {
+    onAddToFavorites(recipe);
+    addToast(isFavorite ? t('toastRemovedFromFavorites') : t('toastAddedToFavorites'), 'success');
+  };
+
+  const handleShoppingListClick = () => {
+    onAddToShoppingList(scaledIngredients);
+    addToast(t('toastAddedToShoppingList'), 'success');
+  };
 
   const difficultyKey = recipe.difficulty?.toLowerCase() as 'easy' | 'medium' | 'hard';
   const difficultyColors: Record<string, string> = {
@@ -304,7 +316,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onAddToFavorites, onAdd
                  <div className="flex justify-between items-center flex-wrap gap-2">
                     <h3 className="text-xl sm:text-2xl font-bold text-pink-900">{t('ingredients')}</h3>
                      <motion.button
-                      onClick={() => onAddToShoppingList(scaledIngredients)}
+                      onClick={handleShoppingListClick}
                       className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-pink-500/80 text-white text-sm font-semibold hover:bg-pink-500 transition-colors"
                       whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                     >
@@ -489,7 +501,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onAddToFavorites, onAdd
               </div>
                <div className="flex justify-center gap-4 flex-wrap mt-6">
                   <motion.button
-                    onClick={() => onAddToFavorites(recipe)}
+                    onClick={handleFavoriteClick}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors ${ isFavorite ? 'bg-pink-500 text-white' : 'bg-black/10 text-pink-900 hover:bg-black/20' }`}
                     whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                   >

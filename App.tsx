@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -26,6 +27,8 @@ import { audioService } from './services/audioService';
 import { Star, Soup } from 'lucide-react';
 import OnboardingTutorial from './components/OnboardingTutorial';
 import Footer from './components/Footer';
+import { ToastProvider } from './contexts/ToastContext';
+import ToastContainer from './components/ToastContainer';
 
 export interface CookingSession {
   recipe: Recipe;
@@ -150,7 +153,6 @@ const App: React.FC = () => {
   }
 
   const handleAddToFavorites = useCallback((recipeToAdd: Recipe) => {
-      audioService.playClick();
       setFavorites(prev => {
           const isFavorited = prev.some(fav => fav.id === recipeToAdd.id);
           if (isFavorited) {
@@ -162,7 +164,6 @@ const App: React.FC = () => {
   }, [setFavorites]);
   
   const handleAddToShoppingList = useCallback((ingredients: Ingredient[]) => {
-      audioService.playPop();
       const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
       const ingredientNames = ingredients.map(ing => `${ing.amount[langKey]} ${ing.name[langKey]}`);
       setShoppingList(prev => {
@@ -172,7 +173,6 @@ const App: React.FC = () => {
   }, [setShoppingList, i18n.language]);
   
   const handleAddMenuToShoppingList = useCallback((menu: Menu) => {
-    audioService.playPop();
     const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
     const allIngredients = [
       ...menu.appetizer.ingredients,
@@ -188,7 +188,6 @@ const App: React.FC = () => {
 
 
   const handleClearShoppingList = useCallback(() => {
-    audioService.playPop();
     setShoppingList([]);
   }, [setShoppingList]);
 
@@ -201,7 +200,6 @@ const App: React.FC = () => {
   };
   
   const handleRemoveFavorite = (recipeId: string) => {
-      audioService.playClick();
       setFavorites(prev => prev.filter(fav => fav.id !== recipeId));
   }
   
@@ -226,7 +224,7 @@ const App: React.FC = () => {
   const isCurrentRecipeFavorite = favorites.some(fav => fav.id === recipe?.id);
 
   return (
-    <>
+    <ToastProvider>
       <AnimatePresence>
         {!hasSeenTutorial && !showSplash && <OnboardingTutorial onFinish={() => setHasSeenTutorial(true)} />}
       </AnimatePresence>
@@ -236,6 +234,8 @@ const App: React.FC = () => {
 
       <div className="relative flex flex-col min-h-screen text-pink-900 selection:bg-pink-300/50 overflow-x-hidden">
         <AuroraBackground colorOverlay={backgroundColor} />
+        
+        <ToastContainer />
 
         <AnimatePresence>
             {isLoading && <LoadingOverlay type={loadingMessage} />}
@@ -385,7 +385,7 @@ const App: React.FC = () => {
         <Footer />
         <ShoppingList items={shoppingList} onClear={handleClearShoppingList} onUpdateItems={setShoppingList} />
       </div>
-    </>
+    </ToastProvider>
   );
 };
 

@@ -97,6 +97,10 @@ const translationAR = {
   "chefIsTyping": "الشيف يكتب...",
   "askQuestion": "اسأل سؤالاً...",
   "chatError": "عذرًا، حدث خطأ في المحادثة. حاول مرة أخرى.",
+  "toastAddedToFavorites": "تمت إضافة الوصفة إلى المفضلة!",
+  "toastRemovedFromFavorites": "تمت إزالة الوصفة من المفضلة.",
+  "toastAddedToShoppingList": "تمت إضافة المكونات إلى قائمة التسوق.",
+  "toastShoppingListCleared": "تم مسح قائمة التسوق.",
   "loadingTips": [
     "هل تعلم؟ إضافة قليل من السكر للطماطم يبرز حلاوتها الطبيعية.",
     "للحصول على بيض مسلوق سهل التقشير، أضف ملعقة صغيرة من صودا الخبز إلى الماء.",
@@ -241,6 +245,10 @@ const translationEN = {
   "chefIsTyping": "Chef is typing...",
   "askQuestion": "Ask a question...",
   "chatError": "Sorry, a chat error occurred. Please try again.",
+  "toastAddedToFavorites": "Recipe added to favorites!",
+  "toastRemovedFromFavorites": "Recipe removed from favorites.",
+  "toastAddedToShoppingList": "Ingredients added to shopping list.",
+  "toastShoppingListCleared": "Shopping list cleared.",
   "loadingTips": [
     "Did you know? A pinch of sugar brings out the natural sweetness in tomatoes.",
     "For easy-to-peel boiled eggs, add a teaspoon of baking soda to the water.",

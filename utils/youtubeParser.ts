@@ -1,7 +1,7 @@
 export const getYouTubeEmbedUrl = (url: string): string | null => {
     if (!url) return null;
     let videoId: string | null = null;
-    
+
     try {
         const urlObj = new URL(url);
         // Standard `https://www.youtube.com/watch?v=...`
@@ -11,7 +11,7 @@ export const getYouTubeEmbedUrl = (url: string): string | null => {
             } else if (urlObj.pathname.startsWith('/embed/')) {
                 // It's already an embed link, just add our params
                 const existingVideoId = urlObj.pathname.split('/')[2];
-                return `https://www.youtube.com/embed/${existingVideoId}?autoplay=1&rel=0`;
+                return `https://www.youtube.com/embed/${existingVideoId}?rel=0`;
             } else if (urlObj.pathname.startsWith('/live/')) {
                 // `https://www.youtube.com/live/...`
                 videoId = urlObj.pathname.split('/')[2];
@@ -38,7 +38,8 @@ export const getYouTubeEmbedUrl = (url: string): string | null => {
 
     if (videoId) {
         const cleanVideoId = videoId.split('?')[0]; // Remove any query params from ID itself
-        return `https://www.youtube.com/embed/${cleanVideoId}?autoplay=1&rel=0`;
+        // Removed origin parameter for better compatibility
+        return `https://www.youtube.com/embed/${cleanVideoId}?rel=0`;
     }
 
     return null;

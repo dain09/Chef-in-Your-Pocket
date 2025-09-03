@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import GlassCard from './GlassCard';
 import { ShoppingCart, Trash2, X } from 'lucide-react';
 import { audioService } from '../services/audioService';
+import { useToast } from '../contexts/ToastContext';
 
 interface ShoppingListProps {
   items: string[];
@@ -13,6 +14,7 @@ interface ShoppingListProps {
 
 const ShoppingList: React.FC<ShoppingListProps> = ({ items, onClear, onUpdateItems }) => {
   const { i18n, t } = useTranslation();
+  const { addToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [checkedItems, setCheckedItems] = useState<string[]>([]);
   
@@ -42,8 +44,8 @@ const ShoppingList: React.FC<ShoppingListProps> = ({ items, onClear, onUpdateIte
   };
   
   const handleClearAll = () => {
-    audioService.playPop();
     onClear();
+    addToast(t('toastShoppingListCleared'), 'info');
   };
 
   const positionClasses = i18n.dir() === 'rtl' 
