@@ -126,6 +126,8 @@ const translationAR = {
   "addPantryItemPlaceholder": "مثال: زيت زيتون، ملح، بصل...",
   "addPantryItemButton": "إضافة",
   "pantryIsEmpty": "خزينتك فارغة حاليًا.",
+  "recipeOfTheDayTitle": "✨ وصفة اليوم ✨",
+  "viewTodaysRecipe": "عرض وصفة اليوم",
   "loadingTips": [
     "هل تعلم؟ إضافة قليل من السكر للطماطم يبرز حلاوتها الطبيعية.",
     "للحصول على بيض مسلوق سهل التقشير، أضف ملعقة صغيرة من صودا الخبز إلى الماء.",
@@ -306,6 +308,8 @@ const translationEN = {
   "addPantryItemPlaceholder": "e.g., olive oil, salt, onions...",
   "addPantryItemButton": "Add",
   "pantryIsEmpty": "Your pantry is currently empty.",
+  "recipeOfTheDayTitle": "✨ Recipe of the Day ✨",
+  "viewTodaysRecipe": "View Today's Recipe",
   "loadingTips": [
     "Did you know? A pinch of sugar brings out the natural sweetness in tomatoes.",
     "For easy-to-peel boiled eggs, add a teaspoon of baking soda to the water.",

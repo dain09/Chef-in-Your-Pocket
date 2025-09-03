@@ -31,6 +31,7 @@ import { LATEST_CHANGELOG_VERSION } from './data/changelog';
 import SupportBanner from './components/SupportBanner';
 import PantryManager from './components/PantryManager';
 import MealPlanCard from './components/MealPlanCard';
+import RecipeOfTheDay from './components/RecipeOfTheDay';
 
 
 export interface CookingSession {
@@ -402,6 +403,7 @@ const AppContent = () => {
                             setError={setError} 
                             pantryItems={pantryItems}
                         />
+                        <RecipeOfTheDay onSelectRecipe={handleSelectFavorite} />
                       </motion.div>
                     )}
 

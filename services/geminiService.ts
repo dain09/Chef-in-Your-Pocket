@@ -604,6 +604,50 @@ export const generateWeeklyMealPlan = async (userPrompt: string): Promise<MealPl
     }
 };
 
+export const getRecipeOfTheDay = async (): Promise<Recipe> => {
+  const prompt = `
+    You are a world-class chef, food historian, and comedian named "Chef AI".
+    Your task is to provide a single, complete recipe object for a popular, seasonal, and delicious dish suitable for today.
+
+    **CRITICAL INSTRUCTION**: For EVERY text field (e.g., recipeName, description, ingredient names, steps, tips, jokes), you MUST provide an object with two keys: 'en' for the English version and 'ar' for the Arabic (العربية) version.
+
+    **CRITICAL DIETARY RESTRICTION**: The recipe MUST NOT contain any pork, pork-derived products, or any form of alcohol. This is a strict requirement.
+
+    Please generate the recipe in a single, valid JSON object according to the provided schema.
+    - The recipe should be of 'Medium' difficulty.
+    - Classify its category appropriately.
+    - Provide exactly 3 jokes, 3 pro tips, and one historical fact.
+    - Do not include any text, greetings, or explanations outside the JSON object itself.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: recipeSchema,
+      },
+    });
+
+    const text = response.text;
+    const recipeData = JSON.parse(text);
+
+    const pairings = await getDrinkPairings(recipeData.recipeName.en, recipeData.description.en);
+
+    return {
+        ...recipeData,
+        id: `daily-${new Date().toISOString().split('T')[0]}`, // Give it a consistent ID for the day
+        imageUrl: undefined,
+        pairings: pairings || undefined
+    };
+
+  } catch (error) {
+    console.error("Error generating recipe of the day from Gemini:", error);
+    throw new Error("errorFailedToGenerate");
+  }
+};
+
 export const startCookingChat = (recipe: Recipe, langKey: 'en' | 'ar'): Chat => {
     const systemInstruction = `You are "Chef AI," a helpful and friendly cooking assistant.
 Your task is to answer the user's questions about THIS RECIPE ONLY. Keep your answers concise, helpful, and directly related to the cooking process. Politely decline to answer any off-topic questions.
