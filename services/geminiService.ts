@@ -179,6 +179,8 @@ export const generateRecipe = async (ingredients: string, cuisine: string, aller
 
     **CRITICAL INSTRUCTION**: For EVERY text field (e.g., recipeName, description, ingredient names, steps, tips, jokes), you MUST provide an object with two keys: 'en' for the English version and 'ar' for the Arabic (العربية) version. The entire JSON response must follow this bilingual structure.
 
+    **CRITICAL DIETARY RESTRICTION**: The recipe MUST NOT contain any pork, pork-derived products (like gelatin, lard), or any form of alcohol (like wine, beer, liquor) as an ingredient. This is a strict requirement.
+
     User Preferences:
     - Main Ingredients: ${ingredients}
     ${cuisinePrompt}
@@ -232,6 +234,8 @@ export const generateMenu = async (occasion: string): Promise<Menu> => {
         Your task is to create a complete, cohesive, and impressive 3-course menu (Appetizer, Main Course, Dessert) for a specific occasion.
 
         **CRITICAL INSTRUCTION**: Your response MUST be a single, valid JSON object following the provided menu schema. For EVERY text field within each recipe (names, descriptions, steps, etc.), you MUST provide an object with two keys: 'en' for English and 'ar' for Arabic.
+
+        **CRITICAL DIETARY RESTRICTION**: ALL recipes in the menu (Appetizer, Main Course, Dessert) MUST NOT contain any pork, pork-derived products (like gelatin, lard), or any form of alcohol (like wine, beer, liquor) as an ingredient. This is a strict requirement.
 
         User's Occasion: "${occasion}"
 
@@ -291,6 +295,7 @@ export const remixRecipe = async (originalRecipe: Recipe, remixPrompt: string): 
 
     **CRITICAL INSTRUCTION**: Your task is to regenerate the ENTIRE recipe JSON object, applying the user's modification.
     - You MUST maintain the exact same JSON schema and bilingual structure ({ "en": "...", "ar": "..." }) for all text fields.
+    - Even after the remix, the recipe MUST remain free of any pork, pork-derived products (like gelatin, lard), and any form of alcohol (like wine, beer, liquor) as an ingredient. This is a strict rule that overrides any user prompt that might suggest otherwise.
     - Intelligently update the ingredients, steps, description, name, and even nutrition facts to reflect the user's request.
     - If the user asks for "vegetarian", replace meat. If they ask for "spicier", add chili. Be creative but accurate.
     - The difficulty, category, or prep/cook times might need to be adjusted based on the change.

@@ -80,6 +80,7 @@ const translationAR = {
   "addYourTouch": "أضف لمستك",
   "remixInstruction": "اكتب التعديل الذي تريده على الوصفة الحالية.",
   "remixPlaceholder": "مثال: اجعلها نباتية، بدون جلوتين، أسرع...",
+  "selectPlaceholder": "اختر...",
   "remixRecipe": "عدّل الوصفة",
   "cancel": "إلغاء",
   "ingredientSubstitutesTitle": "بدائل لـِ {{ingredientName}}",
@@ -151,6 +152,10 @@ const translationAR = {
   },
   "whatsNew": {
     "continue": "متابعة"
+  },
+  "banner": {
+    "solidarityMessage": "تضامناً مع فلسطين الحبيبة 🇵🇸",
+    "dismiss": "إخفاء"
   }
 };
 
@@ -232,6 +237,7 @@ const translationEN = {
   "addYourTouch": "Chef's Touch",
   "remixInstruction": "Describe the change you'd like to make to the current recipe.",
   "remixPlaceholder": "e.g., make it vegetarian, gluten-free, quicker...",
+  "selectPlaceholder": "Select...",
   "remixRecipe": "Remix Recipe",
   "cancel": "Cancel",
   "ingredientSubstitutesTitle": "Substitutes for {{ingredientName}}",
@@ -303,6 +309,10 @@ const translationEN = {
   },
   "whatsNew": {
     "continue": "Continue"
+  },
+  "banner": {
+    "solidarityMessage": "In solidarity with beloved Palestine 🇵🇸",
+    "dismiss": "Dismiss"
   }
 };
 

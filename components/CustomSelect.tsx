@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Check } from 'lucide-react';
 import { audioService } from '../services/audioService';
 import GlassCard from './GlassCard';
+import { useTranslation } from 'react-i18next';
 
 interface SelectOption {
   value: string;
@@ -16,6 +17,7 @@ interface CustomSelectProps {
 }
 
 const CustomSelect: React.FC<CustomSelectProps> = ({ options, selectedValue, onValueChange }) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [direction, setDirection] = useState<'up' | 'down'>('down');
   const selectRef = useRef<HTMLDivElement>(null);
@@ -54,7 +56,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({ options, selectedValue, onV
     audioService.playClick();
   };
 
-  const selectedLabel = options.find(option => option.value === selectedValue)?.label || 'Select...';
+  const selectedLabel = options.find(option => option.value === selectedValue)?.label || t('selectPlaceholder');
 
   return (
     <div className="relative" ref={selectRef}>

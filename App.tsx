@@ -28,6 +28,7 @@ import { ToastProvider } from './contexts/ToastContext';
 import ToastContainer from './components/ToastContainer';
 import WhatsNewModal from './components/WhatsNewModal';
 import { LATEST_CHANGELOG_VERSION } from './data/changelog';
+import SupportBanner from './components/SupportBanner';
 
 
 export interface CookingSession {
@@ -402,6 +403,7 @@ const App: React.FC = () => {
             </AnimatePresence>
           </div>
         </main>
+        <SupportBanner />
         <Footer />
         <ShoppingList items={shoppingList} onClear={handleClearShoppingList} onUpdateItems={setShoppingList} />
       </div>
