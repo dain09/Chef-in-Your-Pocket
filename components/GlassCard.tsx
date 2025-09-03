@@ -1,14 +1,11 @@
 import React from 'react';
-import { motion, MotionProps } from 'framer-motion';
+// FIX: Changed import to pull HTMLMotionProps for better typing
+import { motion, HTMLMotionProps } from 'framer-motion';
 
-// Fix: Updated GlassCardProps to accept all MotionProps.
-// This allows passing 'initial', 'animate', 'exit', and other motion-related props to the underlying motion.div.
-type GlassCardProps = MotionProps & {
-  children: React.ReactNode;
-  className?: string;
-};
+// FIX: Updated GlassCardProps to use HTMLMotionProps which correctly includes animation props and standard element props.
+type GlassCardProps = HTMLMotionProps<"div">;
 
-const GlassCard: React.FC<GlassCardProps> = ({ children, className = '', ...rest }) => {
+const GlassCard = ({ children, className = '', ...rest }: GlassCardProps) => {
   return (
     <motion.div
       className={`bg-white/10 backdrop-blur-lg rounded-2xl border border-white/30 shadow-lg ${className}`}

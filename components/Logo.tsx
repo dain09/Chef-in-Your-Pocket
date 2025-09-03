@@ -1,8 +1,10 @@
 import React from 'react';
-import { motion, Variants } from 'framer-motion';
+// FIX: Removed 'Variants' import as it was causing type errors. Type inference is sufficient here.
+import { motion } from 'framer-motion';
 
-const Logo: React.FC<{ className?: string }> = ({ className }) => {
-  const containerVariants: Variants = {
+const Logo = ({ className }: { className?: string }) => {
+  // FIX: Removed explicit 'Variants' type annotation to allow for better type inference by TypeScript.
+  const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
@@ -12,7 +14,8 @@ const Logo: React.FC<{ className?: string }> = ({ className }) => {
     },
   };
 
-  const sparkleVariants: Variants = {
+  // FIX: Removed explicit 'Variants' type annotation.
+  const sparkleVariants = {
     hidden: { scale: 0, rotate: -90 },
     visible: { 
       scale: 1, 
@@ -35,7 +38,8 @@ const Logo: React.FC<{ className?: string }> = ({ className }) => {
     },
   };
   
-  const hatPathVariants: Variants = {
+  // FIX: Removed explicit 'Variants' type annotation.
+  const hatPathVariants = {
     hidden: { pathLength: 0, opacity: 0 },
     visible: {
         pathLength: 1,

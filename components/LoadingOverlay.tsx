@@ -16,7 +16,7 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ type }) => {
   const getMessagesForType = (currentType: LoadingMessages): string[] => {
       switch (currentType) {
           case 'generating':
-              return [t('generatingRecipe'), t('generatingImage')];
+              return [t('generatingRecipe')];
           case 'remixing':
               return [t('remixingRecipe')];
           case 'remixingLeftovers':
@@ -30,6 +30,8 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ type }) => {
                   t('craftingMainCourse'),
                   t('perfectingDessert')
               ];
+          case 'planningWeek':
+              return [t('planningWeek')];
           default:
               return [t('generating')];
       }

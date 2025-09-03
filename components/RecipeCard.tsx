@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { motion, AnimatePresence, Variants } from 'framer-motion';
+// FIX: Removed 'Variants' import as it was causing a "not exported" error.
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { audioService } from '../services/audioService';
 import type { Recipe, Ingredient, Substitute } from '../types';
@@ -33,12 +34,13 @@ interface SubstitutesModalProps {
   langKey: 'en' | 'ar';
 }
 
-const itemVariants: Variants = {
+// FIX: Removed explicit 'Variants' type annotation to allow for correct type inference.
+const itemVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
 };
 
-const TabButton: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode; }> = ({ active, onClick, children }) => (
+const TabButton = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode; }) => (
     <button
         onClick={() => { audioService.playPop(); onClick(); }}
         className={`relative px-3 sm:px-4 py-2 text-xs sm:text-base font-semibold rounded-full transition-colors ${active ? 'text-pink-800' : 'text-pink-900/60 hover:text-pink-900'}`}
@@ -48,7 +50,7 @@ const TabButton: React.FC<{ active: boolean; onClick: () => void; children: Reac
     </button>
 );
 
-const RemixModal: React.FC<RemixModalProps> = ({ onClose, onSubmit }) => {
+const RemixModal = ({ onClose, onSubmit }: RemixModalProps) => {
   const { t } = useTranslation();
   const [prompt, setPrompt] = useState('');
 
@@ -120,7 +122,7 @@ const RemixModal: React.FC<RemixModalProps> = ({ onClose, onSubmit }) => {
   );
 };
 
-const SubstitutesModal: React.FC<SubstitutesModalProps> = ({ ingredient, onClose, recipe, langKey }) => {
+const SubstitutesModal = ({ ingredient, onClose, recipe, langKey }: SubstitutesModalProps) => {
   const { t } = useTranslation();
   const [substitutes, setSubstitutes] = useState<Substitute[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -190,7 +192,7 @@ const SubstitutesModal: React.FC<SubstitutesModalProps> = ({ ingredient, onClose
   );
 };
 
-const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onAddToFavorites, onAddToShoppingList, onStartHandsFree, isFavorite, onRemix, notes, onUpdateNote }) => {
+const RecipeCard = ({ recipe, onAddToFavorites, onAddToShoppingList, onStartHandsFree, isFavorite, onRemix, notes, onUpdateNote }: RecipeCardProps) => {
   const { t, i18n } = useTranslation();
   const { addToast } = useToast();
   const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
@@ -201,7 +203,8 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onAddToFavorites, onAdd
   const [isRemixing, setIsRemixing] = useState(false);
   const [selectedIngredient, setSelectedIngredient] = useState<Ingredient | null>(null);
   const [currentNote, setCurrentNote] = useState(notes);
-  const debouncedSave = useRef<NodeJS.Timeout | null>(null);
+  // FIX: Changed NodeJS.Timeout to number for browser compatibility.
+  const debouncedSave = useRef<number | null>(null);
 
 
   useEffect(() => {
@@ -447,11 +450,32 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onAddToFavorites, onAdd
         {/* Recipe Header with Image */}
         <GlassCard className="p-0 overflow-hidden">
           <div className="relative aspect-video sm:aspect-[2.5/1] w-full">
-            {recipe.imageUrl ? (
-              <img src={recipe.imageUrl} alt={recipe.recipeName[langKey]} className="absolute inset-0 w-full h-full object-cover"/>
-            ) : (
-              <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-pink-400 to-orange-300"></div>
-            )}
+            <AnimatePresence>
+                {!recipe.imageUrl ? (
+                    <motion.div 
+                        key="placeholder"
+                        className="absolute inset-0 w-full h-full bg-gradient-to-br from-pink-400 to-orange-300 flex items-center justify-center"
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.5 }}
+                    >
+                         <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                            className="w-10 h-10 border-2 border-white/50 border-t-white rounded-full"
+                         />
+                    </motion.div>
+                ) : (
+                    <motion.img
+                        key="recipeImage"
+                        src={recipe.imageUrl}
+                        alt={recipe.recipeName[langKey]}
+                        className="absolute inset-0 w-full h-full object-cover"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.5 }}
+                    />
+                )}
+            </AnimatePresence>
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent"></div>
             <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8 text-white">
                <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-extrabold text-shadow-lg mb-2">{recipe.recipeName[langKey]}</h1>

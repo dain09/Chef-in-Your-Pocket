@@ -20,8 +20,8 @@ const generateIconProps = (id: number) => {
     return {
         id,
         Component: type.Component,
-        top: `${Math.random() * 100}%`,
-        left: `${Math.random() * 100}%`,
+        top: `${5 + Math.random() * 90}%`,
+        left: `${5 + Math.random() * 90}%`,
         width: `${size}px`,
         height: `${size}px`,
         duration: Math.random() * 10 + 15,

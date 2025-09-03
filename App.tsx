@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { generateRecipe, remixRecipe, identifyIngredientsFromImage, generateMenu, startCookingChat, searchRecipeByName, remixLeftovers, generateWeeklyMealPlan } from './services/geminiService';
+import { generateRecipe, remixRecipe, identifyIngredientsFromImage, generateMenu, startCookingChat, searchRecipeByName, remixLeftovers, generateWeeklyMealPlan, generateRecipeImage } from './services/geminiService';
 import type { Recipe, Ingredient, LoadingMessages, Menu, PantryItem, MealPlan, RecipeNotes } from './types';
 import type { Chat } from '@google/genai';
 
@@ -48,7 +48,8 @@ const categoryColorMap: Record<Recipe['category'], string> = {
     'General': 'rgba(167, 139, 250, 0.4)',    // violet-400
 };
 
-const AppContent: React.FC = () => {
+// FIX: Removed React.FC type for modern React best practices
+const AppContent = () => {
   const { t, i18n } = useTranslation();
   const { addToast } = useToast();
   const [showSplash, setShowSplash] = useState(true);
@@ -105,6 +106,17 @@ const AppContent: React.FC = () => {
       setError(null);
   }
 
+  const fetchAndSetRecipeImage = useCallback(async (recipeToUpdate: Recipe) => {
+    const imageUrl = await generateRecipeImage(recipeToUpdate.recipeName.en, recipeToUpdate.description.en);
+    if (imageUrl) {
+        // Update the main recipe view if it's still the same recipe
+        setRecipe(prev => (prev && prev.id === recipeToUpdate.id) ? { ...prev, imageUrl } : prev);
+        
+        // Update the recipe in favorites list as well
+        setFavorites(prevFavs => prevFavs.map(fav => fav.id === recipeToUpdate.id ? { ...fav, imageUrl } : fav));
+    }
+  }, [setFavorites]);
+
   const handleRecipeGeneration = useCallback(async (ingredients: string, cuisine: string, allergies: string, diet: string) => {
     setIsLoading(true);
     setLoadingMessage('generating');
@@ -112,12 +124,14 @@ const AppContent: React.FC = () => {
     try {
       const newRecipe = await generateRecipe(ingredients, cuisine, allergies, diet);
       setRecipe(newRecipe);
+      // Fire-and-forget image generation
+      fetchAndSetRecipeImage(newRecipe);
     } catch (err: any) {
       setError(t(err.message) || t("errorFailedToGenerate"));
     } finally {
       setIsLoading(false);
     }
-  }, [t]);
+  }, [t, fetchAndSetRecipeImage]);
 
   const handleRecipeSearch = useCallback(async (recipeName: string) => {
     setIsLoading(true);
@@ -126,12 +140,14 @@ const AppContent: React.FC = () => {
     try {
       const newRecipe = await searchRecipeByName(recipeName);
       setRecipe(newRecipe);
+      // Fire-and-forget image generation
+      fetchAndSetRecipeImage(newRecipe);
     } catch (err: any) {
       setError(t(err.message) || t("errorFailedToGenerate"));
     } finally {
       setIsLoading(false);
     }
-  }, [t]);
+  }, [t, fetchAndSetRecipeImage]);
 
   const handleLeftoverRemix = useCallback(async (ingredients: string) => {
     setIsLoading(true);
@@ -140,12 +156,14 @@ const AppContent: React.FC = () => {
     try {
       const newRecipe = await remixLeftovers(ingredients);
       setRecipe(newRecipe);
+      // Fire-and-forget image generation
+      fetchAndSetRecipeImage(newRecipe);
     } catch (err: any) {
       setError(t(err.message) || t("errorFailedToGenerate"));
     } finally {
       setIsLoading(false);
     }
-  }, [t]);
+  }, [t, fetchAndSetRecipeImage]);
 
   const handlePlanGeneration = useCallback(async (prompt: string) => {
     setIsLoading(true);
@@ -171,13 +189,15 @@ const AppContent: React.FC = () => {
     try {
       const remixedRecipe = await remixRecipe(recipe, remixPrompt);
       setRecipe(remixedRecipe);
+      // Fire-and-forget image generation for the remixed recipe
+      fetchAndSetRecipeImage(remixedRecipe);
     } catch (err: any) {
       setError(t(err.message) || t("errorFailedToGenerate"));
       setRecipe(null); // Go back to form on error
     } finally {
       setIsLoading(false);
     }
-  }, [recipe, t]);
+  }, [recipe, t, fetchAndSetRecipeImage]);
 
   const handleImageAnalysis = useCallback(async (base64Image: string): Promise<string> => {
     setIsLoading(true);
@@ -488,7 +508,8 @@ const AppContent: React.FC = () => {
 }
 
 
-const App: React.FC = () => {
+// FIX: Removed React.FC type for modern React best practices
+const App = () => {
     return (
         <ToastProvider>
             <AppContent />

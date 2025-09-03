@@ -4,6 +4,32 @@ import type { Recipe, Ingredient, Substitute, Menu, Pairing, MultilingualString,
 // Per @google/genai guidelines, the API key must be sourced directly from `process.env.API_KEY`.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
 
+// This function is now re-enabled and exported to be called from the front-end.
+export const generateRecipeImage = async (recipeName: string, description: string): Promise<string | null> => {
+    try {
+        const prompt = `A delicious, professional, vibrant photo of "${recipeName}". A mouth-watering dish described as: "${description}". The image should be in a cinematic, foodie magazine style, with a clean, simple background. Aspect ratio 16:9.`;
+
+        const response = await ai.models.generateImages({
+            model: 'imagen-4.0-generate-001',
+            prompt: prompt,
+            config: {
+              numberOfImages: 1,
+              outputMimeType: 'image/jpeg',
+              aspectRatio: '16:9',
+            },
+        });
+
+        if (response.generatedImages && response.generatedImages.length > 0) {
+            const base64ImageBytes: string = response.generatedImages[0].image.imageBytes;
+            return `data:image/jpeg;base64,${base64ImageBytes}`;
+        }
+        return null;
+    } catch (error) {
+        console.error("Error generating recipe image:", error);
+        return null; // Return null on failure, the UI can handle it.
+    }
+};
+
 const multilingualStringSchema = {
     type: Type.OBJECT,
     properties: {
@@ -106,11 +132,6 @@ const mealPlanSchema = {
 };
 
 
-const generateRecipeImage = async (recipeName: string, description: string): Promise<string | null> => {
-    // Temporarily disabled to speed up the process per user request.
-    return Promise.resolve(null);
-};
-
 const pairingSchema = {
     type: Type.OBJECT,
     properties: {
@@ -145,6 +166,7 @@ const getDrinkPairings = async (recipeName: string, recipeDescription: string): 
                 responseSchema: pairingsResponseSchema,
             },
         });
+        // FIX: Access the .text property directly to get the response string.
         const text = response.text;
         return JSON.parse(text);
     } catch (error) {
@@ -202,17 +224,14 @@ export const generateRecipe = async (ingredients: string, cuisine: string, aller
     const text = response.text;
     const recipeData = JSON.parse(text);
 
-    // Step 2: Generate Recipe Image and Pairings in parallel
-    const [imageUrl, pairings] = await Promise.all([
-        generateRecipeImage(recipeData.recipeName.en, recipeData.description.en),
-        getDrinkPairings(recipeData.recipeName.en, recipeData.description.en)
-    ]);
+    // Step 2: Generate pairings. Image will be generated separately by the client.
+    const pairings = await getDrinkPairings(recipeData.recipeName.en, recipeData.description.en);
 
     // Step 3: Combine and Return
     return { 
         ...recipeData, 
         id: new Date().toISOString(),
-        imageUrl: imageUrl || undefined,
+        imageUrl: undefined,
         pairings: pairings || undefined
     };
 
@@ -254,17 +273,14 @@ export const searchRecipeByName = async (recipeNameQuery: string): Promise<Recip
         const text = response.text;
         const recipeData = JSON.parse(text);
 
-        // Step 2: Generate Recipe Image and Pairings in parallel
-        const [imageUrl, pairings] = await Promise.all([
-            generateRecipeImage(recipeData.recipeName.en, recipeData.description.en),
-            getDrinkPairings(recipeData.recipeName.en, recipeData.description.en)
-        ]);
+        // Step 2: Generate pairings. Image will be generated separately by the client.
+        const pairings = await getDrinkPairings(recipeData.recipeName.en, recipeData.description.en);
 
         // Step 3: Combine and Return
         return {
             ...recipeData,
             id: new Date().toISOString(),
-            imageUrl: imageUrl || undefined,
+            imageUrl: undefined,
             pairings: pairings || undefined
         };
 
@@ -306,17 +322,14 @@ export const remixLeftovers = async (ingredients: string): Promise<Recipe> => {
     const text = response.text;
     const recipeData = JSON.parse(text);
 
-    // Step 2: Generate Recipe Image and Pairings in parallel
-    const [imageUrl, pairings] = await Promise.all([
-        generateRecipeImage(recipeData.recipeName.en, recipeData.description.en),
-        getDrinkPairings(recipeData.recipeName.en, recipeData.description.en)
-    ]);
+    // Step 2: Generate pairings. Image will be generated separately by the client.
+    const pairings = await getDrinkPairings(recipeData.recipeName.en, recipeData.description.en);
 
     // Step 3: Combine and Return
     return {
         ...recipeData,
         id: new Date().toISOString(),
-        imageUrl: imageUrl || undefined,
+        imageUrl: undefined,
         pairings: pairings || undefined
     };
 
@@ -357,6 +370,8 @@ export const generateMenu = async (occasion: string): Promise<Menu> => {
         const menuData = JSON.parse(text);
 
         // Step 2: Generate images for all three courses and the menu occasion in parallel
+        // NOTE: This is an expensive operation and is currently not handled asynchronously by the front-end.
+        // It's left as-is to minimize changes to the unused Menu feature.
         const [menuImage, appetizerImage, mainCourseImage, dessertImage] = await Promise.all([
             generateRecipeImage(menuData.occasion.en, "A beautiful, thematic, lightweight, web-optimized food spread representing this dining occasion. Professional photography with a simple, clean background."),
             generateRecipeImage(menuData.appetizer.recipeName.en, menuData.appetizer.description.en),
@@ -414,17 +429,14 @@ export const remixRecipe = async (originalRecipe: Recipe, remixPrompt: string): 
     const text = response.text;
     const newRecipeData = JSON.parse(text);
 
-    // Generate a new image and new pairings for the remixed recipe to reflect the changes
-    const [newImageUrl, newPairings] = await Promise.all([
-        generateRecipeImage(newRecipeData.recipeName.en, newRecipeData.description.en),
-        getDrinkPairings(newRecipeData.recipeName.en, newRecipeData.description.en)
-    ]);
+    // Generate new pairings for the remixed recipe. Image is handled by client.
+    const newPairings = await getDrinkPairings(newRecipeData.recipeName.en, newRecipeData.description.en);
 
-    // Combine the new text data with the new image, keeping the original ID
+    // Combine the new text data, keeping the original ID
     return {
         ...newRecipeData,
         id: originalRecipe.id,
-        imageUrl: newImageUrl || originalRecipe.imageUrl, // Fallback to old image if new one fails
+        imageUrl: undefined, // New image will be fetched separately
         pairings: newPairings || originalRecipe.pairings, // Fallback to old pairings if new ones fail
     };
 
@@ -612,6 +624,7 @@ The user's language is ${langKey}. You must respond in that language.`;
         },
         history: [
             { role: 'user', parts: [{ text: recipeContext }] },
+            { role: 'model', parts: [{ text: "I'm ready to help! Ask me anything about this recipe." }] },
         ],
     });
 
