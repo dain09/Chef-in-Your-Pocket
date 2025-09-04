@@ -1,14 +1,135 @@
-import React, { useEffect, useState, useRef, memo, useCallback } from 'react';
-import { motion, AnimatePresence, Variants } from 'framer-motion';
+import React, { useState, useCallback, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { audioService } from '../services/audioService';
 import type { Recipe, Ingredient, Substitute } from '../types';
 import GlassCard from './GlassCard';
-import { Heart, ListPlus, ChefHat, VenetianMask, BookOpen, PlayCircle, Apple, BrainCircuit, Youtube, Wand2, X, GlassWater, Share2, NotebookText } from 'lucide-react';
-import { parseIngredient } from '../utils/ingredientParser';
-import { getIngredientSubstitutes } from '../services/geminiService';
+import { Star, ListPlus, ChefHat, Heart, Wand2, Youtube, Pencil, BookOpen, VenetianMask, Utensils, Share2, X, Loader2 } from 'lucide-react';
+import { audioService } from '../services/audioService';
 import { useToast } from '../contexts/ToastContext';
+import { getIngredientSubstitutes } from '../services/geminiService';
 import { useBlobUrl } from '../hooks/useBlobUrl';
+
+
+const SubstitutesModal: React.FC<{ ingredient: Ingredient; onClose: () => void; langKey: 'en' | 'ar' }> = ({ ingredient, onClose, langKey }) => {
+    const { t } = useTranslation();
+    const [substitutes, setSubstitutes] = useState<Substitute[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchSubstitutes = async () => {
+            setIsLoading(true);
+            try {
+                const result = await getIngredientSubstitutes(ingredient.name.en);
+                setSubstitutes(result);
+            } catch (error) {
+                console.error(error);
+                addToast(t('errorFindingSubstitutes'), 'error');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchSubstitutes();
+    }, [ingredient.name.en, t]);
+
+    const { addToast } = useToast();
+
+    return (
+        <motion.div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        >
+            <GlassCard
+                className="w-full max-w-lg p-4 flex flex-col gap-4 relative"
+                initial={{ scale: 0.8 }} animate={{ scale: 1 }} exit={{ scale: 0.8 }}
+            >
+                <button onClick={onClose} className="absolute top-2 right-2 p-2 text-pink-900/70 hover:text-pink-900 z-10">
+                    <X size={24} />
+                </button>
+                <h3 className="text-xl font-bold text-pink-900 text-center">{t('ingredientSubstitutesTitle', { ingredientName: ingredient.name[langKey] })}</h3>
+                <div className="min-h-[10rem] flex flex-col justify-center">
+                    {isLoading ? (
+                        <div className="flex flex-col items-center gap-2 text-pink-900/70">
+                            <Loader2 className="animate-spin" size={32} />
+                            <p>{t('findingSubstitutes')}</p>
+                        </div>
+                    ) : substitutes.length > 0 ? (
+                        <ul className="space-y-3">
+                            {substitutes.map((sub, index) => (
+                                <li key={index}>
+                                    <strong className="text-pink-900">{sub.name[langKey]}</strong>
+                                    <p className="text-sm text-pink-900/80">{sub.description[langKey]}</p>
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                       <p className="text-center text-pink-900/70">{t('noSubstitutesFound')}</p> 
+                    )}
+                </div>
+            </GlassCard>
+        </motion.div>
+    );
+};
+
+const RemixModal: React.FC<{ onRemix: (prompt: string) => void; onClose: () => void }> = ({ onRemix, onClose }) => {
+    const { t } = useTranslation();
+    const [prompt, setPrompt] = useState('');
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (prompt.trim()) {
+            onRemix(prompt);
+            onClose();
+        }
+    };
+    
+    return (
+        <motion.div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        >
+            <GlassCard
+                className="w-full max-w-lg p-4 flex flex-col gap-4 relative"
+                initial={{ scale: 0.8 }} animate={{ scale: 1 }} exit={{ scale: 0.8 }}
+            >
+                <button onClick={onClose} className="absolute top-2 right-2 p-2 text-pink-900/70 hover:text-pink-900 z-10">
+                    <X size={24} />
+                </button>
+                <h3 className="text-xl font-bold text-pink-900 text-center">{t('addYourTouch')}</h3>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <p className="text-sm text-pink-900/80 text-center">{t('remixInstruction')}</p>
+                    <textarea 
+                        value={prompt}
+                        onChange={(e) => setPrompt(e.target.value)}
+                        rows={3}
+                        className="w-full p-2 bg-white/30 border border-pink-500/30 rounded-lg text-pink-900 placeholder-pink-900/50 focus:ring-2 focus:ring-pink-400 focus:outline-none"
+                        placeholder={t('remixPlaceholder')}
+                    />
+                    <div className="flex justify-end gap-3">
+                        <motion.button type="button" onClick={onClose} className="px-4 py-2 bg-black/10 text-pink-900 font-semibold rounded-lg" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>{t('cancel')}</motion.button>
+                        <motion.button type="submit" disabled={!prompt.trim()} className="px-4 py-2 bg-purple-500 text-white font-semibold rounded-lg disabled:opacity-50" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>{t('remixRecipe')}</motion.button>
+                    </div>
+                </form>
+            </GlassCard>
+        </motion.div>
+    );
+};
+
+
+interface SectionProps {
+  icon: React.ElementType;
+  title: string;
+  children: React.ReactNode;
+}
+
+const SectionCard: React.FC<SectionProps> = ({ icon: Icon, title, children }) => (
+  <GlassCard className="p-4 sm:p-6">
+    <div className="flex items-center mb-4">
+      <Icon className="w-6 h-6 text-cyan-400 me-3 flex-shrink-0" />
+      <h3 className="text-xl sm:text-2xl font-bold text-pink-900">{title}</h3>
+    </div>
+    {children}
+  </GlassCard>
+);
 
 
 interface RecipeCardProps {
@@ -22,552 +143,189 @@ interface RecipeCardProps {
   onUpdateNote: (recipeId: string, note: string) => void;
 }
 
-interface RemixModalProps {
-  onClose: () => void;
-  onSubmit: (prompt: string) => void;
-}
-
-interface SubstitutesModalProps {
-  ingredient: Ingredient | null;
-  onClose: () => void;
-  recipe: Recipe;
-  langKey: 'en' | 'ar';
-}
-
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
-};
-
-const TabButton = memo(({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode; }) => (
-    <button
-        onClick={() => { audioService.playPop(); onClick(); }}
-        className={`relative px-3 sm:px-4 py-2 text-xs sm:text-base font-semibold rounded-full transition-colors ${active ? 'text-pink-800' : 'text-pink-900/60 hover:text-pink-900'}`}
-    >
-        {active && <motion.div layoutId="recipeTabPill" className="absolute inset-0 bg-white/50 rounded-full" />}
-        <span className="relative z-10 flex items-center gap-2">{children}</span>
-    </button>
-));
-
-const RemixModal = ({ onClose, onSubmit }: RemixModalProps) => {
-  const { t } = useTranslation();
-  const [prompt, setPrompt] = useState('');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (prompt.trim()) {
-      audioService.playClick();
-      onSubmit(prompt);
-    }
-  };
-
-  return (
-    <motion.div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
-      <GlassCard
-        className="w-full max-w-lg"
-        variants={{
-          hidden: { opacity: 0, scale: 0.8 },
-          visible: { opacity: 1, scale: 1, transition: { type: 'spring' } },
-          exit: { opacity: 0, scale: 0.8 },
-        }}
-        initial="hidden"
-        animate="visible"
-        exit="exit"
-      >
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-6">
-          <div className="flex justify-between items-center">
-            <h3 className="text-xl font-bold text-pink-100">{t('addYourTouch')}</h3>
-            <button type="button" onClick={onClose} className="p-1 text-pink-100/70 hover:text-pink-100">
-              <X size={24} />
-            </button>
-          </div>
-          <p className="text-sm text-pink-100">{t('remixInstruction')}</p>
-          <textarea
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            rows={3}
-            className="w-full p-3 bg-white/30 border border-pink-500/30 rounded-lg text-pink-100 placeholder-pink-100/70 focus:ring-2 focus:ring-pink-400 focus:outline-none transition-shadow resize-none"
-            placeholder={t('remixPlaceholder')}
-            autoFocus
-          />
-          <div className="flex justify-end gap-4">
-            <motion.button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 bg-black/10 text-pink-100 font-semibold rounded-lg hover:bg-black/20 transition-colors"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              {t('cancel')}
-            </motion.button>
-            <motion.button
-              type="submit"
-              disabled={!prompt.trim()}
-              className="px-4 py-2 bg-purple-500 text-white font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              {t('remixRecipe')}
-            </motion.button>
-          </div>
-        </form>
-      </GlassCard>
-    </motion.div>
-  );
-};
-
-const SubstitutesModal = ({ ingredient, onClose, recipe, langKey }: SubstitutesModalProps) => {
-  const { t } = useTranslation();
-  const [substitutes, setSubstitutes] = useState<Substitute[] | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (ingredient) {
-      const fetchSubstitutes = async () => {
-        setIsLoading(true);
-        setError(null);
-        try {
-          const result = await getIngredientSubstitutes(ingredient, recipe);
-          setSubstitutes(result);
-        } catch (err) {
-          setError(t('errorFindingSubstitutes'));
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      fetchSubstitutes();
-    }
-  }, [ingredient, recipe, t]);
-
-  if (!ingredient) return null;
-
-  return (
-    <motion.div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-    >
-      <GlassCard
-        className="w-full max-w-lg"
-        variants={{ hidden: { scale: 0.8 }, visible: { scale: 1 }, exit: { scale: 0.8 } }}
-        initial="hidden" animate="visible" exit="exit"
-      >
-        <div className="p-6 flex flex-col gap-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-xl font-bold text-pink-900">{t('ingredientSubstitutesTitle', { ingredientName: ingredient.name[langKey] })}</h3>
-            <button type="button" onClick={onClose} className="p-1 text-pink-900/70 hover:text-pink-900">
-              <X size={24} />
-            </button>
-          </div>
-          <div className="max-h-60 overflow-y-auto custom-scrollbar pr-2">
-            {isLoading && (
-              <div className="flex items-center justify-center p-8">
-                <p className="text-pink-900/80 animate-pulse">{t('findingSubstitutes')}</p>
-              </div>
-            )}
-            {error && <p className="text-red-500 p-4 text-center">{error}</p>}
-            {!isLoading && !error && substitutes && substitutes.length > 0 && (
-              <ul className="space-y-4">
-                {substitutes.map((sub, i) => (
-                  <li key={i} className="p-3 bg-white/20 rounded-lg">
-                    <strong className="block font-semibold text-pink-800">{sub.name[langKey]}</strong>
-                    <p className="text-sm text-pink-900/80">{sub.description[langKey]}</p>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {!isLoading && !error && (!substitutes || substitutes.length === 0) && (
-              <p className="text-pink-900/70 text-center p-4">{t('noSubstitutesFound')}</p>
-            )}
-          </div>
-        </div>
-      </GlassCard>
-    </motion.div>
-  );
-};
-
-const RecipeCard = ({ recipe, onAddToFavorites, onAddToShoppingList, onStartHandsFree, isFavorite, onRemix, notes, onUpdateNote }: RecipeCardProps) => {
+const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onAddToFavorites, onAddToShoppingList, onStartHandsFree, isFavorite, onRemix, notes, onUpdateNote }) => {
   const { t, i18n } = useTranslation();
   const { addToast } = useToast();
   const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
+  const blobImageUrl = useBlobUrl(recipe.imageUrl);
+  const [isNotesEditing, setIsNotesEditing] = useState(false);
+  const [noteContent, setNoteContent] = useState(notes);
+  const [substituteIngredient, setSubstituteIngredient] = useState<Ingredient | null>(null);
+  const [isRemixModalOpen, setRemixModalOpen] = useState(false);
 
-  const [servings, setServings] = useState(recipe.servings);
-  const [scaledIngredients, setScaledIngredients] = useState<Ingredient[]>(recipe.ingredients);
-  const [activeTab, setActiveTab] = useState<'method' | 'nutrition' | 'fun' | 'pairings' | 'notes'>('method');
-  const [isRemixing, setIsRemixing] = useState(false);
-  const [selectedIngredient, setSelectedIngredient] = useState<Ingredient | null>(null);
-  const [currentNote, setCurrentNote] = useState(notes);
-  const debouncedSave = useRef<number | null>(null);
-  const displayImageUrl = useBlobUrl(recipe.imageUrl);
-
-
-  useEffect(() => {
-    setServings(recipe.servings);
-    setScaledIngredients(recipe.ingredients);
-    setCurrentNote(notes);
-    setActiveTab('method');
-    audioService.playSuccess();
-  }, [recipe, notes]);
-
-
-  const handleServingsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newServings = parseInt(e.target.value, 10);
-    if (!isNaN(newServings) && newServings > 0) {
-      setServings(newServings);
-      const scale = newServings / recipe.servings;
-      const quantityRegex = /^(\d*\.?\d+)/;
-
-      const newIngredients = recipe.ingredients.map(ing => {
-        // Parse the English amount as it's more likely to have a consistent number format
-        const parsed = parseIngredient(ing.amount.en); 
-        if (parsed) {
-          const newQuantity = parsed.quantity * scale;
-          const formattedQuantity = parseFloat(newQuantity.toFixed(2));
-          
-          const newAmountEn = ing.amount.en.replace(quantityRegex, String(formattedQuantity));
-          const newAmountAr = ing.amount.ar.replace(quantityRegex, String(formattedQuantity));
-
-          return { ...ing, amount: { en: newAmountEn, ar: newAmountAr } };
+  const handleNotesSave = () => {
+    onUpdateNote(recipe.id, noteContent);
+    setIsNotesEditing(false);
+    addToast(t('toastNotesSaved'), 'success');
+  };
+  
+  const handleShare = async () => {
+    const shareData = {
+        title: `${t('appName')}: ${recipe.recipeName[langKey]}`,
+        text: recipe.description[langKey],
+        url: window.location.href,
+    };
+    try {
+        if (navigator.share) {
+            await navigator.share(shareData);
+            addToast(t('toastRecipeShared'), 'success');
+        } else {
+            // Fallback for browsers that don't support navigator.share
+            await navigator.clipboard.writeText(`${shareData.title}\n\n${shareData.text}\n\n${shareData.url}`);
+            addToast(t('toastRecipeCopied'), 'info');
         }
-        return ing;
-      });
-      setScaledIngredients(newIngredients);
-    } else if (e.target.value === '') {
-        setServings(0);
-        setScaledIngredients(recipe.ingredients);
+    } catch (err) {
+        console.error('Share failed:', err);
     }
   };
+
+  const youtubeSearchUrl = useMemo(() => 
+    `https://www.youtube.com/results?search_query=${encodeURIComponent(`${recipe.recipeName.en} recipe`)}`,
+    [recipe.recipeName.en]
+  );
   
-  const handleNoteChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newNote = e.target.value;
-    setCurrentNote(newNote);
-
-    if (debouncedSave.current) {
-      clearTimeout(debouncedSave.current);
-    }
-
-    debouncedSave.current = window.setTimeout(() => {
-      onUpdateNote(recipe.id, newNote);
-      addToast(t('toastNotesSaved'), 'success');
-    }, 1000); // Debounce time: 1 second
-  };
-
-  const handleFavoriteClick = useCallback(() => {
-    onAddToFavorites(recipe);
-    addToast(isFavorite ? t('toastRemovedFromFavorites') : t('toastAddedToFavorites'), 'success');
-  }, [recipe, onAddToFavorites, isFavorite, addToast, t]);
-
-  const handleShoppingListClick = useCallback(() => {
-    onAddToShoppingList(scaledIngredients);
-    addToast(t('toastAddedToShoppingList'), 'success');
-  }, [scaledIngredients, onAddToShoppingList, addToast, t]);
-  
-  const handleShare = useCallback(async () => {
-    audioService.playClick();
-    const ingredientsList = scaledIngredients.map(ing => `- ${ing.amount[langKey]} ${ing.name[langKey]}`).join('\n');
-    const shareText = `${recipe.recipeName[langKey]}\n\n${recipe.description[langKey]}\n\n${t('ingredients')}:\n${ingredientsList}\n\n${t('appName')}`;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: recipe.recipeName[langKey],
-          text: shareText,
-        });
-        addToast(t('toastRecipeShared'), 'success');
-      } catch (error) {
-        console.error('Error sharing:', error);
-      }
-    } else {
-      try {
-        await navigator.clipboard.writeText(shareText);
-        addToast(t('toastRecipeCopied'), 'info');
-      } catch (err) {
-        console.error('Failed to copy text: ', err);
-      }
-    }
-  }, [scaledIngredients, recipe, langKey, t, addToast]);
-
-  const handleWatchTutorial = useCallback(() => {
-    audioService.playClick();
-    const query = encodeURIComponent(recipe.recipeName[langKey]);
-    const url = `https://www.youtube.com/results?search_query=${query}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
-  }, [recipe.recipeName, langKey]);
-
-  const difficultyKey = recipe.difficulty?.toLowerCase() as 'easy' | 'medium' | 'hard';
-  const difficultyColors: Record<string, string> = {
-    easy: 'bg-green-500/80',
-    medium: 'bg-yellow-500/80',
-    hard: 'bg-red-500/80',
-  };
-
-
-  const renderTabContent = () => {
-    switch (activeTab) {
-        case 'method': return (
-            <div className="space-y-4">
-                 <div className="flex justify-between items-center flex-wrap gap-2">
-                    <h3 className="text-xl sm:text-2xl font-bold text-pink-900">{t('ingredients')}</h3>
-                     <motion.button
-                      onClick={handleShoppingListClick}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-pink-500/80 text-white text-sm font-semibold hover:bg-pink-500 transition-colors"
-                      whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                    >
-                      <ListPlus className="w-4 h-4" /> {t('addToShoppingList')}
-                    </motion.button>
-                 </div>
-                 <ul className="list-none list-inside columns-1 sm:columns-2 gap-x-8 text-pink-900/90 space-y-2">
-                    {scaledIngredients.map((ing, i) => (
-                      <li key={i} className="flex items-center gap-2 justify-between">
-                        <span>{ing.amount[langKey]} {ing.name[langKey]}</span>
-                        <motion.button
-                          onClick={() => {
-                            audioService.playPop();
-                            setSelectedIngredient(ing);
-                          }}
-                          className="text-purple-500 hover:text-purple-400 p-1"
-                          whileHover={{ scale: 1.2, rotate: 15 }}
-                          whileTap={{ scale: 0.9 }}
-                          aria-label={`Find substitutes for ${ing.name[langKey]}`}
-                        >
-                          <Wand2 size={16} />
-                        </motion.button>
-                      </li>
-                    ))}
-                  </ul>
-                  <hr className="border-white/30 my-6" />
-                  <div className="flex justify-between items-center flex-wrap gap-2">
-                    <h3 className="text-xl sm:text-2xl font-bold text-pink-900">{t('preparationMethod')}</h3>
-                    <motion.button
-                        onClick={() => onStartHandsFree(recipe)}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-orange-500/90 text-white text-sm font-semibold hover:bg-orange-500 transition-colors"
-                        whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                    >
-                        <PlayCircle size={18} /> <span className="hidden sm:inline">{t('startCooking')}</span>
-                    </motion.button>
-                  </div>
-                 <ol className="list-decimal list-inside space-y-4 text-pink-900/90">
-                    {recipe.steps.map((step, i) => ( <li key={i}>{step[langKey]}</li> ))}
-                 </ol>
-            </div>
-        );
-        case 'nutrition': return (
-            <div>
-                <h3 className="text-xl sm:text-2xl font-bold text-pink-900 mb-4">{t('nutritionFacts')}</h3>
-                <ul className="space-y-2 text-pink-900/90">
-                    {Object.entries(recipe.nutrition).map(([key, value]) => (
-                        <li key={key} className="flex justify-between items-center bg-white/20 p-3 rounded-lg">
-                            <span className="font-semibold">{t(key as keyof typeof recipe.nutrition)}</span>
-                            <span>{value[langKey]}</span>
-                        </li>
-                    ))}
-                </ul>
-            </div>
-        );
-        case 'pairings': return (
-            <div>
-                <h3 className="text-xl sm:text-2xl font-bold text-pink-900 mb-6 text-center">{t('pairings')}</h3>
-                <ul className="space-y-4 max-w-2xl mx-auto">
-                    {recipe.pairings!.map((p, i) => (
-                         <li key={`pairing-${i}`} className="p-3 bg-white/20 rounded-lg">
-                            <strong className="block font-semibold text-pink-800">{p.name[langKey]}</strong>
-                            <p className="text-sm text-pink-900/80 mt-1">{p.description[langKey]}</p>
-                        </li>
-                    ))}
-                </ul>
-            </div>
-        );
-        case 'fun': return (
-            <div>
-                <h3 className="text-xl sm:text-2xl font-bold text-pink-900 mb-4">{t('funSection')}</h3>
-                <div className="space-y-6 text-pink-900/90">
-                    <div>
-                        <h4 className="text-lg font-semibold text-orange-600 mb-2 flex items-center gap-2"><BrainCircuit size={20} /> {t('proTips')}</h4>
-                        <ul className="list-disc list-inside space-y-1">
-                            {recipe.funStuff.proTips.map((tip, i) => <li key={i}>{tip[langKey]}</li>)}
-                        </ul>
-                    </div>
-                    <div>
-                        <h4 className="text-lg font-semibold text-orange-600 mb-2 flex items-center gap-2"><VenetianMask size={20} /> {t('foodJokes')}</h4>
-                        <ul className="list-disc list-inside space-y-1">
-                            {recipe.funStuff.jokes.map((joke, i) => <li key={i}>{joke[langKey]}</li>)}
-                        </ul>
-                    </div>
-                    <div>
-                         <h4 className="text-lg font-semibold text-orange-600 mb-2 flex items-center gap-2"><BookOpen size={20} /> {t('historyCorner')}</h4>
-                         <p>{recipe.funStuff.historyFact[langKey]}</p>
-                    </div>
-                </div>
-            </div>
-        );
-        case 'notes': return (
-            <div>
-                <h3 className="text-xl sm:text-2xl font-bold text-pink-900 mb-4">{t('myNotes')}</h3>
-                <textarea
-                    value={currentNote}
-                    onChange={handleNoteChange}
-                    rows={8}
-                    className="w-full p-3 bg-white/30 border border-pink-500/30 rounded-lg text-pink-900 placeholder-pink-900/50 focus:ring-2 focus:ring-pink-400 focus:outline-none transition-shadow resize-y"
-                    placeholder={t('notesPlaceholder')}
-                />
-            </div>
-        );
-    }
-  }
-
-
   return (
     <>
-      <AnimatePresence>
-        {isRemixing && (
-          <RemixModal
-            onClose={() => { audioService.playPop(); setIsRemixing(false); }}
-            onSubmit={(remixPrompt) => {
-              onRemix(remixPrompt);
-              setIsRemixing(false);
-            }}
-          />
-        )}
-        {selectedIngredient && (
-          <SubstitutesModal
-            ingredient={selectedIngredient}
-            onClose={() => { audioService.playPop(); setSelectedIngredient(null); }}
-            recipe={recipe}
-            langKey={langKey}
-          />
-        )}
-      </AnimatePresence>
-      <motion.div
-        variants={itemVariants}
-        className="w-full max-w-7xl mx-auto space-y-6"
-      >
-        {/* Recipe Header with Image */}
-        <GlassCard className="p-0 overflow-hidden">
-          <div className="relative aspect-[4/3] sm:aspect-video w-full">
-            <AnimatePresence>
-                {!displayImageUrl ? (
-                    <motion.div 
-                        key="placeholder"
-                        className="absolute inset-0 w-full h-full bg-gradient-to-br from-pink-400 to-orange-300 flex items-center justify-center"
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.5 }}
-                    >
-                         <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                            className="w-10 h-10 border-2 border-white/50 border-t-white rounded-full"
-                         />
-                    </motion.div>
-                ) : (
-                    <motion.img
-                        key="recipeImage"
-                        src={displayImageUrl}
-                        alt={recipe.recipeName[langKey]}
-                        className="absolute inset-0 w-full h-full object-cover"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
+        <AnimatePresence>
+            {substituteIngredient && <SubstitutesModal ingredient={substituteIngredient} onClose={() => setSubstituteIngredient(null)} langKey={langKey} />}
+            {isRemixModalOpen && <RemixModal onRemix={onRemix} onClose={() => setRemixModalOpen(false)} />}
+        </AnimatePresence>
+        <div className="w-full max-w-4xl mx-auto p-2 sm:p-4 space-y-6">
+            <div className="text-center">
+                <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-pink-900">{recipe.recipeName[langKey]}</h2>
+                <p className="mt-2 text-base text-pink-900/80 max-w-2xl mx-auto">{recipe.description[langKey]}</p>
+                <div className="flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-6 mt-4 text-pink-900/90">
+                    <span><strong>{t('prepTime')}:</strong> {recipe.prepTime[langKey]}</span>
+                    <span><strong>{t('cookTime')}:</strong> {recipe.cookTime[langKey]}</span>
+                    <span><strong>{t('servings')}:</strong> {recipe.servings} {t('people')}</span>
+                </div>
+            </div>
+
+            <GlassCard className="p-2 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 rounded-2xl">
+                <ActionButton onClick={() => onAddToFavorites(recipe)} icon={Heart} label={isFavorite ? t('inFavorites') : t('addToFavorites')} active={isFavorite} />
+                <ActionButton onClick={() => { onAddToShoppingList(recipe.ingredients); addToast(t('toastAddedToShoppingList'), 'success'); }} icon={ListPlus} label={t('addToShoppingList')} />
+                <ActionButton onClick={() => onStartHandsFree(recipe)} icon={ChefHat} label={t('startCooking')} />
+                <ActionButton onClick={() => setRemixModalOpen(true)} icon={Wand2} label={t('addYourTouch')} />
+                <a href={youtubeSearchUrl} target="_blank" rel="noopener noreferrer" className="md:col-start-auto col-span-2 lg:col-span-1">
+                  <ActionButton onClick={() => {}} icon={Youtube} label={t('watchTutorial')} />
+                </a>
+            </GlassCard>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <SectionCard icon={Utensils} title={t('ingredients')}>
+                    <ul className="list-none list-inside columns-1 sm:columns-2 gap-x-6 text-sm text-pink-900/90">
+                        {recipe.ingredients.map((ing, i) => (
+                            <li key={i} className="mb-1 flex items-center group">
+                                <span>{ing.amount[langKey]} {ing.name[langKey]}</span>
+                                <button onClick={() => setSubstituteIngredient(ing)} className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity text-purple-500">
+                                    <Wand2 size={14} />
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                </SectionCard>
+
+                <SectionCard icon={BookOpen} title={t('nutritionFacts')}>
+                    <div className="grid grid-cols-2 gap-4 text-sm text-pink-900/90">
+                        <div><strong>{t('calories')}:</strong> {recipe.nutrition.calories[langKey]}</div>
+                        <div><strong>{t('protein')}:</strong> {recipe.nutrition.protein[langKey]}</div>
+                        <div><strong>{t('carbs')}:</strong> {recipe.nutrition.carbs[langKey]}</div>
+                        <div><strong>{t('fat')}:</strong> {recipe.nutrition.fat[langKey]}</div>
+                    </div>
+                </SectionCard>
+            </div>
+            
+            {blobImageUrl && (
+                <GlassCard className="p-4">
+                    <motion.img 
+                        key={blobImageUrl}
+                        src={blobImageUrl} 
+                        alt={recipe.recipeName[langKey]} 
+                        className="w-full h-auto max-h-[500px] object-cover rounded-lg shadow-lg"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.5 }}
                     />
+                </GlassCard>
+            )}
+
+            <SectionCard icon={ChefHat} title={t('preparationMethod')}>
+                 <ol className="list-decimal list-inside space-y-3 text-pink-900/90">
+                    {recipe.steps.map((step, i) => (
+                        <li key={i} className="pl-2">{step[langKey]}</li>
+                    ))}
+                </ol>
+            </SectionCard>
+            
+             <SectionCard icon={Pencil} title={t('myNotes')}>
+                {isNotesEditing ? (
+                    <div className="space-y-3">
+                        <textarea
+                            value={noteContent}
+                            onChange={(e) => setNoteContent(e.target.value)}
+                            rows={4}
+                            className="w-full p-2 bg-white/30 border border-pink-500/30 rounded-lg text-pink-900 placeholder-pink-900/50"
+                            placeholder={t('notesPlaceholder')}
+                        />
+                        <button onClick={handleNotesSave} className="px-4 py-2 bg-pink-500 text-white font-semibold rounded-lg">{t('saveNotes', 'Save Notes')}</button>
+                    </div>
+                ) : (
+                    <div onClick={() => setIsNotesEditing(true)} className="cursor-pointer min-h-[5rem]">
+                        <p className={`text-pink-900/90 italic ${!noteContent ? 'text-pink-900/50' : ''}`}>
+                            {noteContent || t('notesPlaceholder')}
+                        </p>
+                    </div>
                 )}
-            </AnimatePresence>
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent"></div>
-            <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8 text-white">
-               <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-extrabold text-shadow-lg mb-2">{recipe.recipeName[langKey]}</h1>
-               <p className="text-md sm:text-lg text-white/90 italic max-w-3xl text-shadow">{recipe.description[langKey]}</p>
-            </div>
-          </div>
-          <div className="p-4 sm:p-6">
-              <div className="flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-6 text-pink-900/90 text-sm sm:text-base flex-wrap">
-                <span>{t('prepTime')}: {recipe.prepTime[langKey]}</span>
-                <span>{t('cookTime')}: {recipe.cookTime[langKey]}</span>
-                <div className="flex items-center gap-2">
-                  <label htmlFor="servings-scaler">{t('servings')}:</label>
-                  <input 
-                    id="servings-scaler" type="number" min="1"
-                    value={servings || ''} onChange={handleServingsChange}
-                    className="bg-white/20 text-pink-900 rounded-md p-1 w-16 text-center focus:outline-none focus:ring-2 focus:ring-pink-400 placeholder-pink-900/50 border border-pink-500/30"
-                  />
+            </SectionCard>
+
+            <SectionCard icon={VenetianMask} title={t('funSection')}>
+                <div className="space-y-6 text-pink-900/90">
+                    {recipe.funStuff.proTips?.length > 0 && (
+                        <div>
+                            <h4 className="font-bold text-pink-900 mb-2">{t('proTips')}</h4>
+                            <ul className="list-disc list-inside space-y-1">
+                                {recipe.funStuff.proTips.map((tip, i) => <li key={i}>{tip[langKey]}</li>)}
+                            </ul>
+                        </div>
+                    )}
+                    {recipe.pairings?.length > 0 && (
+                        <div>
+                            <h4 className="font-bold text-pink-900 mb-2">{t('pairings')}</h4>
+                             <ul className="list-disc list-inside space-y-1">
+                                {recipe.pairings.map((p, i) => <li key={i}><strong>{p.name[langKey]}:</strong> {p.description[langKey]}</li>)}
+                            </ul>
+                        </div>
+                    )}
+                    {recipe.funStuff.jokes?.length > 0 && (
+                         <div>
+                            <h4 className="font-bold text-pink-900 mb-2">{t('foodJokes')}</h4>
+                            <ul className="list-disc list-inside space-y-1">
+                                {recipe.funStuff.jokes.map((joke, i) => <li key={i}>{joke[langKey]}</li>)}
+                            </ul>
+                        </div>
+                    )}
+                    {recipe.funStuff.historyFact?.[langKey] && (
+                        <div>
+                            <h4 className="font-bold text-pink-900 mb-2">{t('historyCorner')}</h4>
+                            <p>{recipe.funStuff.historyFact[langKey]}</p>
+                        </div>
+                    )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <span>{t('difficulty')}:</span>
-                  <span className={`px-3 py-1 text-xs font-bold text-white rounded-full ${difficultyColors[difficultyKey] ?? 'bg-gray-400'}`}>
-                      {t(difficultyKey)}
-                  </span>
-                </div>
-              </div>
-               <div className="flex justify-center gap-4 flex-wrap mt-6">
-                  <motion.button
-                    onClick={handleFavoriteClick}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors ${ isFavorite ? 'bg-pink-500 text-white' : 'bg-black/10 text-pink-900 hover:bg-black/20' }`}
-                    whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                  >
-                    <motion.span animate={{ scale: isFavorite ? [1, 1.3, 1] : 1 }} transition={{ duration: 0.3 }} className="inline-block">
-                      <Heart className="w-5 h-5" />
-                    </motion.span>
-                    {isFavorite ? t('inFavorites') : t('addToFavorites')}
-                  </motion.button>
-                  <motion.button
-                      onClick={handleWatchTutorial}
-                      className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors bg-red-500/90 text-white hover:bg-red-500"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                  >
-                      <Youtube className="w-5 h-5" />
-                      {t('watchTutorial')}
-                  </motion.button>
-                   <motion.button
-                    onClick={() => { audioService.playPop(); setIsRemixing(true); }}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors bg-purple-500/90 text-white hover:bg-purple-500"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Wand2 className="w-5 h-5" />
-                    {t('addYourTouch')}
-                  </motion.button>
-                  <motion.button
-                    onClick={handleShare}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors bg-cyan-500/90 text-white hover:bg-cyan-500"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Share2 className="w-5 h-5" />
-                    {t('shareRecipe')}
-                  </motion.button>
-               </div>
-          </div>
-        </GlassCard>
-        
-        {/* Tabs and Content */}
-         <GlassCard className="p-4 sm:p-6">
-           <div className="w-full flex justify-center items-center flex-wrap gap-x-2 sm:gap-x-4 gap-y-2 mb-6">
-              <TabButton active={activeTab === 'method'} onClick={() => setActiveTab('method')}><ChefHat size={18} /> {t('preparationMethod')}</TabButton>
-              <TabButton active={activeTab === 'nutrition'} onClick={() => setActiveTab('nutrition')}><Apple size={18} /> {t('nutritionFacts')}</TabButton>
-              {recipe.pairings && recipe.pairings.length > 0 && (
-                <TabButton active={activeTab === 'pairings'} onClick={() => setActiveTab('pairings')}><GlassWater size={18} /> {t('pairings')}</TabButton>
-              )}
-              <TabButton active={activeTab === 'fun'} onClick={() => setActiveTab('fun')}><VenetianMask size={18} /> {t('funSection')}</TabButton>
-              <TabButton active={activeTab === 'notes'} onClick={() => setActiveTab('notes')}><NotebookText size={18} /> {t('myNotes')}</TabButton>
-           </div>
-           <AnimatePresence mode="wait">
-              <motion.div
-                  key={activeTab}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.3 }}
-              >
-                  {renderTabContent()}
-              </motion.div>
-           </AnimatePresence>
-         </GlassCard>
-      </motion.div>
+            </SectionCard>
+        </div>
     </>
   );
 };
 
-export default memo(RecipeCard);
+const ActionButton: React.FC<{onClick: () => void; icon: React.ElementType; label: string; active?: boolean;}> = ({ onClick, icon: Icon, label, active }) => (
+    <motion.button
+        onClick={() => { audioService.playClick(); onClick(); }}
+        className={`w-full p-3 text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 ${active ? 'bg-pink-200/80 text-pink-800' : 'bg-white/30 text-pink-900/80 hover:bg-white/50'}`}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+    >
+        <Icon size={18} /> {label}
+    </motion.button>
+);
+
+export default RecipeCard;
