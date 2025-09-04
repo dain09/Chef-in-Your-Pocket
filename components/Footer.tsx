@@ -14,6 +14,9 @@ const Footer: React.FC = () => {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.7, delay: 3.0 }}
         >
+            <p className="mb-4 text-base font-semibold text-pink-900/80">
+              {t('banner.solidarityMessage')}
+            </p>
             <div className="flex justify-center items-center gap-6 mb-2">
                 <motion.a 
                     href="https://github.com/dain09" 
@@ -33,7 +36,7 @@ const Footer: React.FC = () => {
                 </motion.a>
             </div>
             <p className="text-sm">
-                {t('footer.copyright', { year: currentYear, name: 'Dain09' })}
+                {t('footer.copyright', { year: currentYear, name: 'Abdallah ibrahim & Dain09' })}
             </p>
         </motion.footer>
     );

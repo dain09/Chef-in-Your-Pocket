@@ -28,7 +28,6 @@ import { ToastProvider, useToast } from './contexts/ToastContext';
 import ToastContainer from './components/ToastContainer';
 import WhatsNewModal from './components/WhatsNewModal';
 import { LATEST_CHANGELOG_VERSION } from './data/changelog';
-import SupportBanner from './components/SupportBanner';
 import PantryManager from './components/PantryManager';
 import MealPlanCard from './components/MealPlanCard';
 import RecipeOfTheDay from './components/RecipeOfTheDay';
@@ -500,7 +499,6 @@ const AppContent = () => {
             </AnimatePresence>
           </div>
         </main>
-        <SupportBanner />
         <Footer />
         <ShoppingList items={shoppingList} onClear={handleClearShoppingList} onUpdateItems={setShoppingList} />
       </div>
