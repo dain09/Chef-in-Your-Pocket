@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, memo, useCallback } from 'react';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { audioService } from '../services/audioService';
@@ -39,7 +39,7 @@ const itemVariants: Variants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
 };
 
-const TabButton = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode; }) => (
+const TabButton = memo(({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode; }) => (
     <button
         onClick={() => { audioService.playPop(); onClick(); }}
         className={`relative px-3 sm:px-4 py-2 text-xs sm:text-base font-semibold rounded-full transition-colors ${active ? 'text-pink-800' : 'text-pink-900/60 hover:text-pink-900'}`}
@@ -47,7 +47,7 @@ const TabButton = ({ active, onClick, children }: { active: boolean; onClick: ()
         {active && <motion.div layoutId="recipeTabPill" className="absolute inset-0 bg-white/50 rounded-full" />}
         <span className="relative z-10 flex items-center gap-2">{children}</span>
     </button>
-);
+));
 
 const RemixModal = ({ onClose, onSubmit }: RemixModalProps) => {
   const { t } = useTranslation();
@@ -257,17 +257,17 @@ const RecipeCard = ({ recipe, onAddToFavorites, onAddToShoppingList, onStartHand
     }, 1000); // Debounce time: 1 second
   };
 
-  const handleFavoriteClick = () => {
+  const handleFavoriteClick = useCallback(() => {
     onAddToFavorites(recipe);
     addToast(isFavorite ? t('toastRemovedFromFavorites') : t('toastAddedToFavorites'), 'success');
-  };
+  }, [recipe, onAddToFavorites, isFavorite, addToast, t]);
 
-  const handleShoppingListClick = () => {
+  const handleShoppingListClick = useCallback(() => {
     onAddToShoppingList(scaledIngredients);
     addToast(t('toastAddedToShoppingList'), 'success');
-  };
+  }, [scaledIngredients, onAddToShoppingList, addToast, t]);
   
-  const handleShare = async () => {
+  const handleShare = useCallback(async () => {
     audioService.playClick();
     const ingredientsList = scaledIngredients.map(ing => `- ${ing.amount[langKey]} ${ing.name[langKey]}`).join('\n');
     const shareText = `${recipe.recipeName[langKey]}\n\n${recipe.description[langKey]}\n\n${t('ingredients')}:\n${ingredientsList}\n\n${t('appName')}`;
@@ -290,14 +290,14 @@ const RecipeCard = ({ recipe, onAddToFavorites, onAddToShoppingList, onStartHand
         console.error('Failed to copy text: ', err);
       }
     }
-  };
+  }, [scaledIngredients, recipe, langKey, t, addToast]);
 
-  const handleWatchTutorial = () => {
+  const handleWatchTutorial = useCallback(() => {
     audioService.playClick();
     const query = encodeURIComponent(recipe.recipeName[langKey]);
     const url = `https://www.youtube.com/results?search_query=${query}`;
     window.open(url, '_blank', 'noopener,noreferrer');
-  };
+  }, [recipe.recipeName, langKey]);
 
   const difficultyKey = recipe.difficulty?.toLowerCase() as 'easy' | 'medium' | 'hard';
   const difficultyColors: Record<string, string> = {
@@ -570,4 +570,4 @@ const RecipeCard = ({ recipe, onAddToFavorites, onAddToShoppingList, onStartHand
   );
 };
 
-export default RecipeCard;
+export default memo(RecipeCard);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { generateRecipe, remixRecipe, identifyIngredientsFromImage, generateMenu, startCookingChat, searchRecipeByName, remixLeftovers, generateWeeklyMealPlan, generateRecipeImage } from './services/geminiService';
@@ -93,17 +93,17 @@ const AppContent = () => {
     document.documentElement.dir = i18n.dir();
   }, [i18n.language, i18n.dir]);
   
-  const handleCloseWhatsNew = () => {
+  const handleCloseWhatsNew = useCallback(() => {
     setShowWhatsNew(false);
     setLastSeenVersion(LATEST_CHANGELOG_VERSION);
-  };
+  }, [setLastSeenVersion]);
   
-  const resetMainView = () => {
+  const resetMainView = useCallback(() => {
       setRecipe(null);
       setMenu(null);
       setMealPlan(null);
       setError(null);
-  }
+  }, []);
 
   const fetchAndSetRecipeImage = useCallback(async (recipeToUpdate: Recipe) => {
     const imageUrl = await generateRecipeImage(recipeToUpdate.recipeName.en, recipeToUpdate.description.en);
@@ -130,7 +130,7 @@ const AppContent = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [t, fetchAndSetRecipeImage]);
+  }, [t, fetchAndSetRecipeImage, resetMainView]);
 
   const handleRecipeSearch = useCallback(async (recipeName: string) => {
     setIsLoading(true);
@@ -146,7 +146,7 @@ const AppContent = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [t, fetchAndSetRecipeImage]);
+  }, [t, fetchAndSetRecipeImage, resetMainView]);
 
   const handleLeftoverRemix = useCallback(async (ingredients: string) => {
     setIsLoading(true);
@@ -162,7 +162,7 @@ const AppContent = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [t, fetchAndSetRecipeImage]);
+  }, [t, fetchAndSetRecipeImage, resetMainView]);
 
   const handlePlanGeneration = useCallback(async (prompt: string) => {
     setIsLoading(true);
@@ -176,7 +176,7 @@ const AppContent = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [t]);
+  }, [t, resetMainView]);
 
   const handleRemixRecipe = useCallback(async (remixPrompt: string) => {
     if (!recipe) return;
@@ -213,13 +213,13 @@ const AppContent = () => {
     }
   }, [t]);
   
-  const handleViewChange = (view: 'home' | 'favorites' | 'pantry') => {
+  const handleViewChange = useCallback((view: 'home' | 'favorites' | 'pantry') => {
     audioService.playClick();
     if (view === 'home') {
       resetMainView();
     }
     setActiveView(view);
-  }
+  }, [resetMainView]);
 
   const handleAddToFavorites = useCallback((recipeToAdd: Recipe) => {
       setFavorites(prev => {
@@ -272,26 +272,26 @@ const AppContent = () => {
     setShoppingList([]);
   }, [setShoppingList]);
 
-  const handleSelectFavorite = (selectedRecipe: Recipe) => {
+  const handleSelectFavorite = useCallback((selectedRecipe: Recipe) => {
       audioService.playSwoosh();
       setRecipe(selectedRecipe);
       setMenu(null);
       setActiveView('home');
       window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, []);
   
-  const handleRemoveFavorite = (recipeId: string) => {
+  const handleRemoveFavorite = useCallback((recipeId: string) => {
       setFavorites(prev => prev.filter(fav => fav.id !== recipeId));
-  }
+  }, [setFavorites]);
 
-  const handleUpdateNote = (recipeId: string, note: string) => {
+  const handleUpdateNote = useCallback((recipeId: string, note: string) => {
     setRecipeNotes(prev => ({
       ...prev,
       [recipeId]: note,
     }));
-  };
+  }, [setRecipeNotes]);
   
-  const handleStartCookingSession = (recipeToCook: Recipe) => {
+  const handleStartCookingSession = useCallback((recipeToCook: Recipe) => {
     const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
     try {
         const chat = startCookingChat(recipeToCook, langKey);
@@ -300,12 +300,12 @@ const AppContent = () => {
         console.error("Failed to start cooking session:", error);
         setError(t('errorFailedToGenerate')); // A generic error for now
     }
-  };
+  }, [t]);
 
-  const handleResetHomeView = () => {
+  const handleResetHomeView = useCallback(() => {
     audioService.playClick();
     resetMainView();
-  }
+  }, [resetMainView]);
 
   const isCurrentRecipeFavorite = favorites.some(fav => fav.id === recipe?.id);
 

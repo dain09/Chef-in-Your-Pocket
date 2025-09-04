@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 // FIX: Changed import to pull HTMLMotionProps for better typing
 import { motion, HTMLMotionProps } from 'framer-motion';
 
@@ -16,4 +16,4 @@ const GlassCard = ({ children, className = '', ...rest }: GlassCardProps) => {
   );
 };
 
-export default GlassCard;
+export default memo(GlassCard);

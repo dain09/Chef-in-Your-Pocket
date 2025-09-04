@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { motion } from 'framer-motion';
 
 const Logo = ({ className }: { className?: string }) => {
@@ -95,4 +95,4 @@ const Logo = ({ className }: { className?: string }) => {
   );
 };
 
-export default Logo;
+export default memo(Logo);

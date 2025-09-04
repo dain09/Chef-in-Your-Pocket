@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import type { Recipe } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -31,7 +31,7 @@ const itemVariants = {
     },
 };
 
-const FavoriteItem: React.FC<{ recipe: Recipe; onSelect: (recipe: Recipe) => void; onRemove: (recipeId: string) => void; }> = ({ recipe, onSelect, onRemove }) => {
+const FavoriteItem: React.FC<{ recipe: Recipe; onSelect: (recipe: Recipe) => void; onRemove: (recipeId: string) => void; }> = memo(({ recipe, onSelect, onRemove }) => {
     const { t, i18n } = useTranslation();
     const { addToast } = useToast();
     const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
@@ -82,7 +82,7 @@ const FavoriteItem: React.FC<{ recipe: Recipe; onSelect: (recipe: Recipe) => voi
             </GlassCard>
         </motion.div>
     );
-};
+});
 
 
 const FavoritesList: React.FC<FavoritesListProps> = ({ favorites, onSelect, onRemove }) => {

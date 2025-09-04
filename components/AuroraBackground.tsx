@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Utensils, Soup, UtensilsCrossed } from 'lucide-react';
 import { audioService } from '../services/audioService';
@@ -32,9 +32,9 @@ const generateIconProps = (id: number) => {
 
 
 const AuroraBackground: React.FC<AuroraBackgroundProps> = ({ colorOverlay }) => {
-    // Increase number of icons and manage them in state
+    // PERF: Reduced number of icons from 30 to 12 to drastically improve animation performance.
     const [icons, setIcons] = useState(() =>
-        Array.from({ length: 30 }).map((_, i) => generateIconProps(i))
+        Array.from({ length: 12 }).map((_, i) => generateIconProps(i))
     );
 
     // Handle interaction to make icons "jump"
@@ -113,4 +113,4 @@ const AuroraBackground: React.FC<AuroraBackgroundProps> = ({ colorOverlay }) => 
   );
 };
 
-export default AuroraBackground;
+export default memo(AuroraBackground);
