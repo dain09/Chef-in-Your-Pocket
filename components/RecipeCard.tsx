@@ -1,19 +1,20 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, memo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import type { Recipe, Ingredient, Substitute } from '../types';
 import GlassCard from './GlassCard';
-import { Star, ListPlus, ChefHat, Heart, Wand2, Youtube, Pencil, BookOpen, VenetianMask, Utensils, Share2, X, Loader2 } from 'lucide-react';
+import { Star, ListPlus, ChefHat, Heart, Wand2, Youtube, Pencil, BookOpen, VenetianMask, Utensils, Share2, X, Loader2, ImageOff } from 'lucide-react';
 import { audioService } from '../services/audioService';
 import { useToast } from '../contexts/ToastContext';
 import { getIngredientSubstitutes } from '../services/geminiService';
-import { useBlobUrl } from '../hooks/useBlobUrl';
 
 
 const SubstitutesModal: React.FC<{ ingredient: Ingredient; onClose: () => void; langKey: 'en' | 'ar' }> = ({ ingredient, onClose, langKey }) => {
     const { t } = useTranslation();
     const [substitutes, setSubstitutes] = useState<Substitute[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const { addToast } = useToast();
+
 
     useEffect(() => {
         const fetchSubstitutes = async () => {
@@ -29,9 +30,8 @@ const SubstitutesModal: React.FC<{ ingredient: Ingredient; onClose: () => void; 
             }
         };
         fetchSubstitutes();
-    }, [ingredient.name.en, t]);
+    }, [ingredient.name.en, t, addToast]);
 
-    const { addToast } = useToast();
 
     return (
         <motion.div
@@ -143,23 +143,34 @@ interface RecipeCardProps {
   onUpdateNote: (recipeId: string, note: string) => void;
 }
 
+const ActionButton: React.FC<{onClick: () => void; icon: React.ElementType; label: string; active?: boolean;}> = memo(({ onClick, icon: Icon, label, active }) => (
+    <motion.button
+        onClick={() => { audioService.playClick(); onClick(); }}
+        className={`w-full p-3 text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 ${active ? 'bg-pink-200/80 text-pink-800' : 'bg-white/30 text-pink-900/80 hover:bg-white/50'}`}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+    >
+        <Icon size={18} /> {label}
+    </motion.button>
+));
+
+
 const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onAddToFavorites, onAddToShoppingList, onStartHandsFree, isFavorite, onRemix, notes, onUpdateNote }) => {
   const { t, i18n } = useTranslation();
   const { addToast } = useToast();
   const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
-  const blobImageUrl = useBlobUrl(recipe.imageUrl);
   const [isNotesEditing, setIsNotesEditing] = useState(false);
   const [noteContent, setNoteContent] = useState(notes);
   const [substituteIngredient, setSubstituteIngredient] = useState<Ingredient | null>(null);
   const [isRemixModalOpen, setRemixModalOpen] = useState(false);
 
-  const handleNotesSave = () => {
+  const handleNotesSave = useCallback(() => {
     onUpdateNote(recipe.id, noteContent);
     setIsNotesEditing(false);
     addToast(t('toastNotesSaved'), 'success');
-  };
+  }, [noteContent, onUpdateNote, recipe.id, t, addToast]);
   
-  const handleShare = async () => {
+  const handleShare = useCallback(async () => {
     const shareData = {
         title: `${t('appName')}: ${recipe.recipeName[langKey]}`,
         text: recipe.description[langKey],
@@ -170,14 +181,13 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onAddToFavorites, onAdd
             await navigator.share(shareData);
             addToast(t('toastRecipeShared'), 'success');
         } else {
-            // Fallback for browsers that don't support navigator.share
             await navigator.clipboard.writeText(`${shareData.title}\n\n${shareData.text}\n\n${shareData.url}`);
             addToast(t('toastRecipeCopied'), 'info');
         }
     } catch (err) {
         console.error('Share failed:', err);
     }
-  };
+  }, [recipe, langKey, t, addToast]);
 
   const youtubeSearchUrl = useMemo(() => 
     `https://www.youtube.com/results?search_query=${encodeURIComponent(`${recipe.recipeName.en} recipe`)}`,
@@ -235,11 +245,11 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onAddToFavorites, onAdd
                 </SectionCard>
             </div>
             
-            {blobImageUrl && (
+            {recipe.imageUrl ? (
                 <GlassCard className="p-4">
                     <motion.img 
-                        key={blobImageUrl}
-                        src={blobImageUrl} 
+                        key={recipe.id}
+                        src={recipe.imageUrl} 
                         alt={recipe.recipeName[langKey]} 
                         className="w-full h-auto max-h-[500px] object-cover rounded-lg shadow-lg"
                         initial={{ opacity: 0, scale: 0.95 }}
@@ -247,6 +257,11 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onAddToFavorites, onAdd
                         transition={{ duration: 0.5 }}
                     />
                 </GlassCard>
+            ) : (
+                 <GlassCard className="p-4 h-64 flex flex-col items-center justify-center text-pink-900/30">
+                    <ImageOff size={48} />
+                    <p className="mt-2 text-sm">{t('generating')}</p>
+                 </GlassCard>
             )}
 
             <SectionCard icon={ChefHat} title={t('preparationMethod')}>
@@ -288,11 +303,11 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onAddToFavorites, onAdd
                             </ul>
                         </div>
                     )}
-                    {recipe.pairings?.length > 0 && (
+                    {(recipe.pairings?.length ?? 0) > 0 && (
                         <div>
                             <h4 className="font-bold text-pink-900 mb-2">{t('pairings')}</h4>
                              <ul className="list-disc list-inside space-y-1">
-                                {recipe.pairings.map((p, i) => <li key={i}><strong>{p.name[langKey]}:</strong> {p.description[langKey]}</li>)}
+                                {(recipe.pairings ?? []).map((p, i) => <li key={i}><strong>{p.name[langKey]}:</strong> {p.description[langKey]}</li>)}
                             </ul>
                         </div>
                     )}
@@ -317,15 +332,4 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onAddToFavorites, onAdd
   );
 };
 
-const ActionButton: React.FC<{onClick: () => void; icon: React.ElementType; label: string; active?: boolean;}> = ({ onClick, icon: Icon, label, active }) => (
-    <motion.button
-        onClick={() => { audioService.playClick(); onClick(); }}
-        className={`w-full p-3 text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 ${active ? 'bg-pink-200/80 text-pink-800' : 'bg-white/30 text-pink-900/80 hover:bg-white/50'}`}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-    >
-        <Icon size={18} /> {label}
-    </motion.button>
-);
-
-export default RecipeCard;
+export default memo(RecipeCard);

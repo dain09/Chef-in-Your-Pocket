@@ -4,8 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { Recipe } from '../types';
 import { getRecipeOfTheDay, generateRecipeImage } from '../services/geminiService';
 import GlassCard from './GlassCard';
-import { Loader2 } from 'lucide-react';
-import { useBlobUrl } from '../hooks/useBlobUrl';
+import { Loader2, ImageOff } from 'lucide-react';
 
 interface RecipeOfTheDayProps {
   onSelectRecipe: (recipe: Recipe) => void;
@@ -21,7 +20,6 @@ const RecipeOfTheDay: React.FC<RecipeOfTheDayProps> = ({ onSelectRecipe }) => {
   const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const blobImageUrl = useBlobUrl(recipe?.imageUrl);
   
   useEffect(() => {
     const fetchRecipe = async () => {
@@ -31,11 +29,15 @@ const RecipeOfTheDay: React.FC<RecipeOfTheDayProps> = ({ onSelectRecipe }) => {
       const oneDay = 24 * 60 * 60 * 1000;
 
       if (cachedData) {
-        const { recipe: cachedRecipe, timestamp }: CachedRecipe = JSON.parse(cachedData);
-        if (Date.now() - timestamp < oneDay) {
-          setRecipe(cachedRecipe);
-          setIsLoading(false);
-          return;
+        try {
+          const { recipe: cachedRecipe, timestamp }: CachedRecipe = JSON.parse(cachedData);
+          if (Date.now() - timestamp < oneDay) {
+            setRecipe(cachedRecipe);
+            setIsLoading(false);
+            return;
+          }
+        } catch (e) {
+          localStorage.removeItem(cacheKey); // Clear corrupted cache
         }
       }
 
@@ -49,6 +51,7 @@ const RecipeOfTheDay: React.FC<RecipeOfTheDayProps> = ({ onSelectRecipe }) => {
                 localStorage.setItem(cacheKey, JSON.stringify({ recipe: recipeWithImage, timestamp: Date.now() }));
             }
         });
+        // Set recipe immediately without image
         setRecipe(newRecipe);
         localStorage.setItem(cacheKey, JSON.stringify({ recipe: newRecipe, timestamp: Date.now() }));
 
@@ -85,16 +88,18 @@ const RecipeOfTheDay: React.FC<RecipeOfTheDayProps> = ({ onSelectRecipe }) => {
     <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0, transition: { delay: 0.5 } }}
-        className="w-full max-w-2xl mx-auto mt-12"
+        className="relative z-10 w-full max-w-2xl mx-auto mt-12"
     >
         <GlassCard className="p-4 sm:p-6">
             <h3 className="text-xl sm:text-2xl font-bold text-pink-900 text-center mb-4">{t('recipeOfTheDayTitle')}</h3>
             <div className="flex flex-col md:flex-row gap-4">
-                {blobImageUrl && (
-                     <div className="md:w-1/3 h-48 md:h-auto rounded-lg overflow-hidden">
-                        <img src={blobImageUrl} alt={recipe.recipeName[langKey]} className="w-full h-full object-cover" />
-                    </div>
-                )}
+                <div className="md:w-1/3 h-48 md:h-auto rounded-lg overflow-hidden bg-white/10 flex items-center justify-center text-pink-900/30">
+                    {recipe.imageUrl ? (
+                        <img src={recipe.imageUrl} alt={recipe.recipeName[langKey]} className="w-full h-full object-cover" />
+                    ): (
+                        <ImageOff size={40} />
+                    )}
+                </div>
                 <div className="flex-grow flex flex-col justify-center text-center md:text-left">
                     <h4 className="text-lg font-bold text-pink-900">{recipe.recipeName[langKey]}</h4>
                     <p className="text-sm text-pink-900/80 mt-1 line-clamp-3">{recipe.description[langKey]}</p>

@@ -1,9 +1,8 @@
 import { GoogleGenAI, Type, Chat } from "@google/genai";
 import { v4 as uuidv4 } from 'uuid';
-import type { Recipe, Menu, Ingredient, MultilingualString, MealPlan, Substitute } from '../types';
+import type { Recipe, Menu, MultilingualString, MealPlan, Substitute } from '../types';
 
-// FIX: Initialize the GoogleGenAI client
-const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
+const ai = new GoogleGenAI({apiKey: process.env.API_KEY ?? ''});
 
 // Helper Schemas
 const multilingualStringSchema = {
@@ -127,7 +126,6 @@ export const generateRecipe = async (ingredients: string, cuisine: string, aller
       Also, suggest some drink pairings.
     `;
 
-    // FIX: Use ai.models.generateContent
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt,
@@ -137,6 +135,9 @@ export const generateRecipe = async (ingredients: string, cuisine: string, aller
         },
     });
 
+    if (!response.text) {
+        throw new Error("errorFailedToGenerate");
+    }
     const recipeData = parseJsonResponse<Omit<Recipe, 'id'>>(response.text);
     return { ...recipeData, id: uuidv4() };
 };
@@ -201,12 +202,15 @@ export const generateWeeklyMealPlan = async (prompt: string): Promise<MealPlan> 
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: fullPrompt,
-        config: {
-            responseMimeType: "application/json",
-            responseSchema: mealPlanSchema,
         },
     });
     
+    if (!response.text) {
+        throw new Error("errorFailedToGenerate");
+    }
+    const planData = parseJsonResponse<MealPlan>(response.text);
+    planData.plan.forEach(day => {
+        day.recipe.id = uuidv4();
     const planData = parseJsonResponse<MealPlan>(response.text);
     planData.plan.forEach(day => {
         day.recipe.id = uuidv4();
@@ -246,11 +250,11 @@ export const identifyIngredientsFromImage = async (base64Image: string): Promise
             data: base64Image,
         },
     };
-    const textPart = {
-        text: 'Identify the food items in this image. List them as comma-separated ingredients suitable for a recipe. Respond only with the list of ingredients in English.'
-    };
-    // FIX: Use ai.models.generateContent for multimodal input
-    const response = await ai.models.generateContent({
+        contents: { parts: [imagePart, textPart] },
+    });
+
+    return response.text?.trim() ?? '';
+};
         model: 'gemini-2.5-flash',
         contents: { parts: [imagePart, textPart] },
     });
@@ -271,7 +275,6 @@ export const startCookingChat = (recipe: Recipe, lang: 'en' | 'ar'): Chat => {
   If asked about something unrelated, politely decline and steer the conversation back to the recipe.
   Keep your answers concise and clear. Be friendly and encouraging.`;
 
-  // FIX: Use ai.chats.create
   const chat = ai.chats.create({
     model: 'gemini-2.5-flash',
     config: {
@@ -289,18 +292,18 @@ export const generateRecipeImage = async (recipeName: string, recipeDescription:
             Recipe Name: "${recipeName}"
             Description: "${recipeDescription}"
             The image should be beautifully lit, with a clean background that complements the dish. Focus on making the food look delicious and fresh. Top-down or a 45-degree angle shot.
+            IMPORTANT: Generate a web-optimized, lightweight photo with a small file size to ensure it loads quickly on all devices.
         `;
 
-        // FIX: Use ai.models.generateImages
         const response = await ai.models.generateImages({
             model: 'imagen-4.0-generate-001',
-            prompt: prompt,
-            config: {
-                numberOfImages: 1,
-                outputMimeType: 'image/jpeg',
-                aspectRatio: '1:1',
-            }
         });
+
+        if (response.generatedImages && response.generatedImages.length > 0 && response.generatedImages[0].image) {
+            const base64ImageBytes = response.generatedImages[0].image.imageBytes;
+            return `data:image/jpeg;base64,${base64ImageBytes}`;
+        }
+        return null;
 
         if (response.generatedImages && response.generatedImages.length > 0) {
             const base64ImageBytes = response.generatedImages[0].image.imageBytes;
@@ -316,12 +319,14 @@ export const generateRecipeImage = async (recipeName: string, recipeDescription:
 export const getCookingTip = async (): Promise<MultilingualString> => {
     const prompt = `Provide a single, short, interesting cooking tip or food fact. The tip should be universally helpful. Provide the response in both English (en) and Arabic (ar). Ensure the response strictly follows the provided JSON schema.`;
     
-    // FIX: Use ai.models.generateContent for getting a cooking tip
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-        config: {
-            responseMimeType: "application/json",
+        }
+    });
+
+    if (!response.text) {
+        throw new Error("errorFailedToGenerate");
+    }
+    return parseJsonResponse<MultilingualString>(response.text);
+};
             responseSchema: multilingualStringSchema
         }
     });
@@ -343,11 +348,14 @@ export const getIngredientSubstitutes = async (ingredientName: string): Promise<
 
     const responseSchema = {
         type: Type.ARRAY,
-        items: substituteSchema,
-    };
+        },
+    });
 
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+    if (!response.text) {
+        throw new Error("errorFailedToGenerate");
+    }
+    return parseJsonResponse<Substitute[]>(response.text);
+};
         contents: prompt,
         config: {
             responseMimeType: "application/json",
