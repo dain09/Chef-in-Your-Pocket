@@ -1,8 +1,8 @@
 import { GoogleGenAI, Type, Chat } from "@google/genai";
 import { v4 as uuidv4 } from 'uuid';
-import type { Recipe, Menu, MultilingualString, MealPlan, Substitute } from '../types';
+import type { Recipe, Menu, Ingredient, MultilingualString, MealPlan, Substitute } from '../types';
 
-const ai = new GoogleGenAI({apiKey: process.env.API_KEY ?? ''});
+const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
 
 // Helper Schemas
 const multilingualStringSchema = {
@@ -135,9 +135,6 @@ export const generateRecipe = async (ingredients: string, cuisine: string, aller
         },
     });
 
-    if (!response.text) {
-        throw new Error("errorFailedToGenerate");
-    }
     const recipeData = parseJsonResponse<Omit<Recipe, 'id'>>(response.text);
     return { ...recipeData, id: uuidv4() };
 };
@@ -202,15 +199,12 @@ export const generateWeeklyMealPlan = async (prompt: string): Promise<MealPlan> 
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: fullPrompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: mealPlanSchema,
         },
     });
     
-    if (!response.text) {
-        throw new Error("errorFailedToGenerate");
-    }
-    const planData = parseJsonResponse<MealPlan>(response.text);
-    planData.plan.forEach(day => {
-        day.recipe.id = uuidv4();
     const planData = parseJsonResponse<MealPlan>(response.text);
     planData.plan.forEach(day => {
         day.recipe.id = uuidv4();
@@ -250,11 +244,11 @@ export const identifyIngredientsFromImage = async (base64Image: string): Promise
             data: base64Image,
         },
     };
-        contents: { parts: [imagePart, textPart] },
-    });
+    const textPart = {
+        text: 'Identify the food items in this image. List them as comma-separated ingredients suitable for a recipe. Respond only with the list of ingredients in English.'
+    };
 
-    return response.text?.trim() ?? '';
-};
+    const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: { parts: [imagePart, textPart] },
     });
@@ -297,13 +291,13 @@ export const generateRecipeImage = async (recipeName: string, recipeDescription:
 
         const response = await ai.models.generateImages({
             model: 'imagen-4.0-generate-001',
+            prompt: prompt,
+            config: {
+                numberOfImages: 1,
+                outputMimeType: 'image/jpeg',
+                aspectRatio: '1:1',
+            }
         });
-
-        if (response.generatedImages && response.generatedImages.length > 0 && response.generatedImages[0].image) {
-            const base64ImageBytes = response.generatedImages[0].image.imageBytes;
-            return `data:image/jpeg;base64,${base64ImageBytes}`;
-        }
-        return null;
 
         if (response.generatedImages && response.generatedImages.length > 0) {
             const base64ImageBytes = response.generatedImages[0].image.imageBytes;
@@ -319,14 +313,11 @@ export const generateRecipeImage = async (recipeName: string, recipeDescription:
 export const getCookingTip = async (): Promise<MultilingualString> => {
     const prompt = `Provide a single, short, interesting cooking tip or food fact. The tip should be universally helpful. Provide the response in both English (en) and Arabic (ar). Ensure the response strictly follows the provided JSON schema.`;
     
-        }
-    });
-
-    if (!response.text) {
-        throw new Error("errorFailedToGenerate");
-    }
-    return parseJsonResponse<MultilingualString>(response.text);
-};
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
             responseSchema: multilingualStringSchema
         }
     });
@@ -348,14 +339,11 @@ export const getIngredientSubstitutes = async (ingredientName: string): Promise<
 
     const responseSchema = {
         type: Type.ARRAY,
-        },
-    });
+        items: substituteSchema,
+    };
 
-    if (!response.text) {
-        throw new Error("errorFailedToGenerate");
-    }
-    return parseJsonResponse<Substitute[]>(response.text);
-};
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
         contents: prompt,
         config: {
             responseMimeType: "application/json",
