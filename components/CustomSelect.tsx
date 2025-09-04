@@ -83,7 +83,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({ options, selectedValue, onV
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: direction === 'down' ? -10 : 10 }}
           >
-            <GlassCard className="p-2 max-h-60 overflow-y-auto custom-scrollbar !bg-white/50 backdrop-blur-xl">
+            <GlassCard className="p-2 max-h-60 overflow-y-auto custom-scrollbar !bg-pink-100/80 backdrop-blur-xl">
               <ul className="space-y-1">
                 {options.map(option => (
                   <li key={option.value}>
