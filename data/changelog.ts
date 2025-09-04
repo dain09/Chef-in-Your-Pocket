@@ -1,8 +1,27 @@
 import { Recycle, Search, Youtube, Zap, Sparkles, Archive, CalendarDays } from 'lucide-react';
 
-export const LATEST_CHANGELOG_VERSION = '2.2.0';
+export const LATEST_CHANGELOG_VERSION = '2.3.0';
 
 export const changelog = [
+    {
+        version: '2.3.0',
+        title: {
+            en: 'Polish & Performance Update',
+            ar: 'تحديث التحسينات والأداء',
+        },
+        features: [
+            {
+                icon: Zap,
+                title: { en: 'Major Bug Fixes & Performance Boost', ar: 'إصلاحات رئيسية وتعزيز للأداء' },
+                description: { en: 'We squashed tricky display bugs with dropdowns and images. The app now runs smoother and more reliably on all devices, especially mobile!', ar: 'لقد أصلحنا الأخطاء المزعجة في عرض القوائم المنسدلة والصور. التطبيق الآن يعمل بشكل أكثر سلاسة وموثوقية على جميع الأجهزة، خاصة الهواتف!' },
+            },
+            {
+                icon: Sparkles,
+                title: { en: 'UI Refinements & Permanent Footer', ar: 'تحسينات بصرية وتذييل دائم' },
+                description: { en: 'We fine-tuned visual details like dropdown menus. The solidarity message is now a permanent part of our footer, proudly crediting Abdallah Ibrahim.', ar: 'لقد قمنا بضبط التفاصيل المرئية مثل القوائم المنسدلة. أصبحت رسالة التضامن الآن جزءًا دائمًا من تذييل الصفحة، مع إضافة اسم عبد الله إبراهيم بكل فخر.' },
+            },
+        ],
+    },
     {
         version: '2.2.0',
         title: {
