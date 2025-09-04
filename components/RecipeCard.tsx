@@ -8,6 +8,7 @@ import { Heart, ListPlus, ChefHat, VenetianMask, BookOpen, PlayCircle, Apple, Br
 import { parseIngredient } from '../utils/ingredientParser';
 import { getIngredientSubstitutes } from '../services/geminiService';
 import { useToast } from '../contexts/ToastContext';
+import { useBlobUrl } from '../hooks/useBlobUrl';
 
 
 interface RecipeCardProps {
@@ -201,8 +202,8 @@ const RecipeCard = ({ recipe, onAddToFavorites, onAddToShoppingList, onStartHand
   const [isRemixing, setIsRemixing] = useState(false);
   const [selectedIngredient, setSelectedIngredient] = useState<Ingredient | null>(null);
   const [currentNote, setCurrentNote] = useState(notes);
-  // FIX: Changed NodeJS.Timeout to number for browser compatibility.
   const debouncedSave = useRef<number | null>(null);
+  const displayImageUrl = useBlobUrl(recipe.imageUrl);
 
 
   useEffect(() => {
@@ -449,7 +450,7 @@ const RecipeCard = ({ recipe, onAddToFavorites, onAddToShoppingList, onStartHand
         <GlassCard className="p-0 overflow-hidden">
           <div className="relative aspect-[4/3] sm:aspect-video w-full">
             <AnimatePresence>
-                {!recipe.imageUrl ? (
+                {!displayImageUrl ? (
                     <motion.div 
                         key="placeholder"
                         className="absolute inset-0 w-full h-full bg-gradient-to-br from-pink-400 to-orange-300 flex items-center justify-center"
@@ -465,7 +466,7 @@ const RecipeCard = ({ recipe, onAddToFavorites, onAddToShoppingList, onStartHand
                 ) : (
                     <motion.img
                         key="recipeImage"
-                        src={recipe.imageUrl}
+                        src={displayImageUrl}
                         alt={recipe.recipeName[langKey]}
                         className="absolute inset-0 w-full h-full object-cover"
                         initial={{ opacity: 0 }}

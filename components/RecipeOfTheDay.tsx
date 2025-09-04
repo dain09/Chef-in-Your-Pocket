@@ -6,6 +6,7 @@ import { getRecipeOfTheDay, generateRecipeImage } from '../services/geminiServic
 import GlassCard from './GlassCard';
 import { Sparkles, ImageOff } from 'lucide-react';
 import { audioService } from '../services/audioService';
+import { useBlobUrl } from '../hooks/useBlobUrl';
 
 interface RecipeOfTheDayProps {
   onSelectRecipe: (recipe: Recipe) => void;
@@ -33,6 +34,7 @@ const RecipeOfTheDay: React.FC<RecipeOfTheDayProps> = ({ onSelectRecipe }) => {
 
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const displayImageUrl = useBlobUrl(recipe?.imageUrl);
 
   useEffect(() => {
     let isMounted = true;
@@ -124,8 +126,8 @@ const RecipeOfTheDay: React.FC<RecipeOfTheDayProps> = ({ onSelectRecipe }) => {
         </h2>
         <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
           <div className="w-full sm:w-1/3 aspect-[4/3] sm:aspect-video bg-pink-200/50 flex items-center justify-center rounded-lg overflow-hidden flex-shrink-0">
-            {recipe.imageUrl ? (
-              <img src={recipe.imageUrl} alt={recipe.recipeName[langKey]} className="w-full h-full object-cover" />
+            {displayImageUrl ? (
+              <img src={displayImageUrl} alt={recipe.recipeName[langKey]} className="w-full h-full object-cover" />
             ) : (
               <ImageOff className="w-10 h-10 text-pink-400/50" />
             )}

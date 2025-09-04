@@ -5,6 +5,7 @@ import type { Menu, Recipe, Ingredient } from '../types';
 import GlassCard from './GlassCard';
 import { audioService } from '../services/audioService';
 import { ListPlus, ImageOff, ChefHat } from 'lucide-react';
+import { useBlobUrl } from '../hooks/useBlobUrl';
 
 type Course = 'appetizer' | 'mainCourse' | 'dessert';
 
@@ -25,13 +26,15 @@ const TabButton: React.FC<{ active: boolean; onClick: () => void; children: Reac
 
 const RecipeDetailView: React.FC<{ recipe: Recipe, langKey: 'en' | 'ar' }> = ({ recipe, langKey }) => {
   const { t } = useTranslation();
+  const displayImageUrl = useBlobUrl(recipe.imageUrl);
+  
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
       {/* Left side: Image and details */}
       <div className="space-y-4">
         <div className="aspect-[4/3] sm:aspect-video bg-pink-200/50 flex items-center justify-center rounded-lg overflow-hidden">
-          {recipe.imageUrl ? (
-            <img src={recipe.imageUrl} alt={recipe.recipeName[langKey]} className="w-full h-full object-cover" />
+          {displayImageUrl ? (
+            <img src={displayImageUrl} alt={recipe.recipeName[langKey]} className="w-full h-full object-cover" />
           ) : (
             <ImageOff className="w-12 h-12 text-pink-400/50" />
           )}
@@ -79,6 +82,7 @@ const MenuCard: React.FC<MenuCardProps> = ({ menu, onAddToShoppingList }) => {
   const { t, i18n } = useTranslation();
   const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
   const [activeTab, setActiveTab] = useState<Course>('appetizer');
+  const displayMenuImageUrl = useBlobUrl(menu.imageUrl);
 
   const activeRecipe = menu[activeTab];
 
@@ -91,8 +95,8 @@ const MenuCard: React.FC<MenuCardProps> = ({ menu, onAddToShoppingList }) => {
     >
       <GlassCard className="p-0 overflow-hidden">
         <div className="relative aspect-[4/3] sm:aspect-video w-full">
-            {menu.imageUrl ? (
-              <img src={menu.imageUrl} alt={menu.occasion[langKey]} className="absolute inset-0 w-full h-full object-cover"/>
+            {displayMenuImageUrl ? (
+              <img src={displayMenuImageUrl} alt={menu.occasion[langKey]} className="absolute inset-0 w-full h-full object-cover"/>
             ) : (
               <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-pink-400 to-orange-300"></div>
             )}
