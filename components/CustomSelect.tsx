@@ -78,7 +78,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({ options, selectedValue, onV
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            className={`absolute z-10 w-full ${direction === 'down' ? 'mt-2 top-full' : 'mb-2 bottom-full'}`}
+            className={`absolute z-50 w-full ${direction === 'down' ? 'mt-2 top-full' : 'mb-2 bottom-full'}`}
             initial={{ opacity: 0, y: direction === 'down' ? -10 : 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: direction === 'down' ? -10 : 10 }}

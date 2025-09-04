@@ -92,7 +92,7 @@ const RecipeOfTheDay: React.FC<RecipeOfTheDayProps> = ({ onSelectRecipe }) => {
   if (isLoading) {
     return (
       <motion.div
-        className="mt-8 w-full max-w-2xl mx-auto"
+        className="relative z-10 mt-8 w-full max-w-2xl mx-auto"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.5 }}
@@ -113,7 +113,7 @@ const RecipeOfTheDay: React.FC<RecipeOfTheDayProps> = ({ onSelectRecipe }) => {
 
   return (
     <motion.div
-      className="mt-8 w-full max-w-2xl mx-auto"
+      className="relative z-10 mt-8 w-full max-w-2xl mx-auto"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.5 }}

@@ -252,7 +252,7 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ onRecipeSubmit, onPlanSubmit, o
             />
         )}
       </AnimatePresence>
-      <GlassCard className="w-full max-w-2xl mx-auto p-4 sm:p-6 md:p-8">
+      <GlassCard className="relative z-20 w-full max-w-2xl mx-auto p-4 sm:p-6 md:p-8">
         <motion.form
           onSubmit={handleSubmit}
           className="flex flex-col space-y-6"
