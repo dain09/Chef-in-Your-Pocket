@@ -137,6 +137,8 @@
   "errorFailedToGenerate": "Failed to generate your request. The input might be incompatible. Please try again!",
   "errorFailedToAnalyzeImage": "Could not analyze the image. Please try again with a clearer picture.",
   "errorCamera": "Could not access the camera. Please check permissions.",
+  "generatingImage": "Generating image...",
+  "errorImage": "Image failed to load.",
   "onboarding": {
     "prev": "Previous",
     "next": "Next",

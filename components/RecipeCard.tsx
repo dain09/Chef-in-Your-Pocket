@@ -7,6 +7,7 @@ import { Star, ListPlus, ChefHat, Heart, Wand2, Youtube, Pencil, BookOpen, Venet
 import { audioService } from '../services/audioService';
 import { useToast } from '../contexts/ToastContext';
 import { getIngredientSubstitutes } from '../services/geminiService';
+import { useBlobUrl } from '../hooks/useBlobUrl';
 
 
 const SubstitutesModal: React.FC<{ ingredient: Ingredient; onClose: () => void; langKey: 'en' | 'ar' }> = ({ ingredient, onClose, langKey }) => {
@@ -163,6 +164,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onAddToFavorites, onAdd
   const [noteContent, setNoteContent] = useState(notes);
   const [substituteIngredient, setSubstituteIngredient] = useState<Ingredient | null>(null);
   const [isRemixModalOpen, setRemixModalOpen] = useState(false);
+  const blobImageUrl = useBlobUrl(recipe.imageUrl);
 
   const handleNotesSave = useCallback(() => {
     onUpdateNote(recipe.id, noteContent);
@@ -245,24 +247,29 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onAddToFavorites, onAdd
                 </SectionCard>
             </div>
             
-            {recipe.imageUrl ? (
-                <GlassCard className="p-4">
+            <GlassCard className="p-4 min-h-[20rem] flex items-center justify-center">
+                { recipe.imageUrl === 'error' ? (
+                    <div className="flex flex-col items-center gap-2 text-pink-900/30">
+                       <ImageOff size={48} />
+                       <p className="mt-2 text-sm">{t('errorImage')}</p>
+                    </div>
+                ) : recipe.imageUrl ? (
                     <motion.img 
                         key={recipe.id}
-                        src={recipe.imageUrl} 
+                        src={blobImageUrl} 
                         alt={recipe.recipeName[langKey]} 
                         className="w-full h-auto max-h-[500px] object-cover rounded-lg shadow-lg"
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.5 }}
                     />
-                </GlassCard>
-            ) : (
-                 <GlassCard className="p-4 h-64 flex flex-col items-center justify-center text-pink-900/30">
-                    <ImageOff size={48} />
-                    <p className="mt-2 text-sm">{t('generating')}</p>
-                 </GlassCard>
-            )}
+                ) : (
+                     <div className="flex flex-col items-center gap-2 text-pink-900/30">
+                        <Loader2 size={40} className="animate-spin"/>
+                        <p className="mt-2 text-sm">{t('generatingImage')}</p>
+                     </div>
+                )}
+            </GlassCard>
 
             <SectionCard icon={ChefHat} title={t('preparationMethod')}>
                  <ol className="list-decimal list-inside space-y-3 text-pink-900/90">
@@ -303,11 +310,11 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onAddToFavorites, onAdd
                             </ul>
                         </div>
                     )}
-                    {(recipe.pairings?.length ?? 0) > 0 && (
+                    {recipe.pairings?.length > 0 && (
                         <div>
                             <h4 className="font-bold text-pink-900 mb-2">{t('pairings')}</h4>
                              <ul className="list-disc list-inside space-y-1">
-                                {(recipe.pairings ?? []).map((p, i) => <li key={i}><strong>{p.name[langKey]}:</strong> {p.description[langKey]}</li>)}
+                                {recipe.pairings.map((p, i) => <li key={i}><strong>{p.name[langKey]}:</strong> {p.description[langKey]}</li>)}
                             </ul>
                         </div>
                     )}

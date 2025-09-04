@@ -5,6 +5,7 @@ import type { Recipe } from '../types';
 import { getRecipeOfTheDay, generateRecipeImage } from '../services/geminiService';
 import GlassCard from './GlassCard';
 import { Loader2, ImageOff } from 'lucide-react';
+import { useBlobUrl } from '../hooks/useBlobUrl';
 
 interface RecipeOfTheDayProps {
   onSelectRecipe: (recipe: Recipe) => void;
@@ -20,6 +21,7 @@ const RecipeOfTheDay: React.FC<RecipeOfTheDayProps> = ({ onSelectRecipe }) => {
   const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const blobImageUrl = useBlobUrl(recipe?.imageUrl);
   
   useEffect(() => {
     const fetchRecipe = async () => {
@@ -37,23 +39,20 @@ const RecipeOfTheDay: React.FC<RecipeOfTheDayProps> = ({ onSelectRecipe }) => {
             return;
           }
         } catch (e) {
-          localStorage.removeItem(cacheKey); // Clear corrupted cache
+          localStorage.removeItem(cacheKey);
         }
       }
 
       try {
         const newRecipe = await getRecipeOfTheDay();
-        // Fire-and-forget image generation
+        setRecipe(newRecipe); // Set recipe immediately without image
+        
         generateRecipeImage(newRecipe.recipeName.en, newRecipe.description.en).then(imageUrl => {
-            if (imageUrl) {
-                const recipeWithImage = { ...newRecipe, imageUrl };
-                setRecipe(recipeWithImage);
-                localStorage.setItem(cacheKey, JSON.stringify({ recipe: recipeWithImage, timestamp: Date.now() }));
-            }
+            const finalImageUrl = imageUrl ?? 'error';
+            const recipeWithImage = { ...newRecipe, imageUrl: finalImageUrl };
+            setRecipe(recipeWithImage);
+            localStorage.setItem(cacheKey, JSON.stringify({ recipe: recipeWithImage, timestamp: Date.now() }));
         });
-        // Set recipe immediately without image
-        setRecipe(newRecipe);
-        localStorage.setItem(cacheKey, JSON.stringify({ recipe: newRecipe, timestamp: Date.now() }));
 
       } catch (error) {
         console.error("Failed to fetch Recipe of the Day:", error);
@@ -94,10 +93,15 @@ const RecipeOfTheDay: React.FC<RecipeOfTheDayProps> = ({ onSelectRecipe }) => {
             <h3 className="text-xl sm:text-2xl font-bold text-pink-900 text-center mb-4">{t('recipeOfTheDayTitle')}</h3>
             <div className="flex flex-col md:flex-row gap-4">
                 <div className="md:w-1/3 h-48 md:h-auto rounded-lg overflow-hidden bg-white/10 flex items-center justify-center text-pink-900/30">
-                    {recipe.imageUrl ? (
-                        <img src={recipe.imageUrl} alt={recipe.recipeName[langKey]} className="w-full h-full object-cover" />
-                    ): (
-                        <ImageOff size={40} />
+                    {recipe.imageUrl === 'error' ? (
+                        <div className="flex flex-col items-center gap-2">
+                           <ImageOff size={40} />
+                           <p className="text-xs">{t('errorImage')}</p>
+                        </div>
+                    ) : recipe.imageUrl ? (
+                        <img src={blobImageUrl} alt={recipe.recipeName[langKey]} className="w-full h-full object-cover" />
+                    ) : (
+                        <Loader2 size={32} className="animate-spin" />
                     )}
                 </div>
                 <div className="flex-grow flex flex-col justify-center text-center md:text-left">

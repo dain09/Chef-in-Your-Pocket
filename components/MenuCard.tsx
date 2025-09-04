@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { Menu, Recipe } from '../types';
 import GlassCard from './GlassCard';
 import { ListPlus, ImageOff } from 'lucide-react';
+import { useBlobUrl } from '../hooks/useBlobUrl';
 
 interface MenuCardProps {
   menu: Menu;
@@ -13,11 +14,12 @@ interface MenuCardProps {
 
 const CourseCard: React.FC<{ title: string; recipe: Recipe; onSelect: () => void; langKey: 'en' | 'ar' }> = ({ title, recipe, onSelect, langKey }) => {
     const { t } = useTranslation();
+    const blobImageUrl = useBlobUrl(recipe.imageUrl);
     return (
         <GlassCard className="p-4 flex flex-col sm:flex-row gap-4 items-center bg-white/20">
             <div className="w-full sm:w-1/3 h-40 sm:h-full flex-shrink-0 rounded-lg overflow-hidden">
-                {recipe.imageUrl ? (
-                    <img src={recipe.imageUrl} alt={recipe.recipeName[langKey]} className="w-full h-full object-cover"/>
+                {recipe.imageUrl && recipe.imageUrl !== 'error' ? (
+                    <img src={blobImageUrl} alt={recipe.recipeName[langKey]} className="w-full h-full object-cover"/>
                 ) : (
                     <div className="w-full h-full flex items-center justify-center bg-white/10 text-pink-900/30">
                         <ImageOff size={40} />

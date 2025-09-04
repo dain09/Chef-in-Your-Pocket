@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { Recipe } from '../types';
 import GlassCard from './GlassCard';
 import { Star, X, ImageOff } from 'lucide-react';
+import { useBlobUrl } from '../hooks/useBlobUrl';
 
 interface FavoriteItemProps {
   recipe: Recipe;
@@ -14,6 +15,7 @@ interface FavoriteItemProps {
 const FavoriteItemCard: React.FC<FavoriteItemProps> = ({ recipe, onSelect, onRemove }) => {
     const { i18n, t } = useTranslation();
     const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
+    const blobImageUrl = useBlobUrl(recipe.imageUrl);
     
     return (
         <GlassCard className="group relative overflow-hidden flex flex-col h-full">
@@ -28,8 +30,8 @@ const FavoriteItemCard: React.FC<FavoriteItemProps> = ({ recipe, onSelect, onRem
                 <X size={16} />
              </button>
             <div className="h-40 bg-pink-200/50 overflow-hidden">
-              {recipe.imageUrl ? (
-                <img src={recipe.imageUrl} alt={recipe.recipeName[langKey]} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+              {recipe.imageUrl && recipe.imageUrl !== 'error' ? (
+                <img src={blobImageUrl} alt={recipe.recipeName[langKey]} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-white/10 text-pink-900/30">
                   <ImageOff size={40} />

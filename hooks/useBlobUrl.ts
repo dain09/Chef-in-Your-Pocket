@@ -11,7 +11,7 @@ export const useBlobUrl = (dataUrl: string | undefined): string | undefined => {
     const [blobUrl, setBlobUrl] = useState<string | undefined>(undefined);
 
     useEffect(() => {
-        // If the URL is not a data URL, use it directly.
+        // If the URL is not a data URL or is the error flag, use it directly.
         if (!dataUrl || !dataUrl.startsWith('data:image')) {
             setBlobUrl(dataUrl);
             return;

@@ -107,14 +107,15 @@ const AppContent = () => {
 
   const fetchAndSetRecipeImage = useCallback(async (recipeToUpdate: Recipe) => {
     const imageUrl = await generateRecipeImage(recipeToUpdate.recipeName.en, recipeToUpdate.description.en);
-    if (imageUrl) {
-        // Update the main recipe view if it's still the same recipe
-        setRecipe(prev => (prev && prev.id === recipeToUpdate.id) ? { ...prev, imageUrl } : prev);
-        
-        // Update the recipe in favorites list as well
-        setFavorites(prevFavs => prevFavs.map(fav => fav.id === recipeToUpdate.id ? { ...fav, imageUrl } : fav));
-    }
+    const finalImageUrl = imageUrl ?? 'error'; // Use 'error' string as a flag for failed generation
+    
+    // Update the main recipe view if it's still the same recipe
+    setRecipe(prev => (prev && prev.id === recipeToUpdate.id) ? { ...prev, imageUrl: finalImageUrl } : prev);
+    
+    // Update the recipe in favorites list as well
+    setFavorites(prevFavs => prevFavs.map(fav => fav.id === recipeToUpdate.id ? { ...fav, imageUrl: finalImageUrl } : fav));
   }, [setFavorites]);
+
 
   const handleRecipeGeneration = useCallback(async (ingredients: string, cuisine: string, allergies: string, diet: string) => {
     setIsLoading(true);
@@ -123,7 +124,6 @@ const AppContent = () => {
     try {
       const newRecipe = await generateRecipe(ingredients, cuisine, allergies, diet);
       setRecipe(newRecipe);
-      // Fire-and-forget image generation
       fetchAndSetRecipeImage(newRecipe);
     } catch (err: any) {
       setError(t(err.message) || t("errorFailedToGenerate"));
@@ -139,7 +139,6 @@ const AppContent = () => {
     try {
       const newRecipe = await searchRecipeByName(recipeName);
       setRecipe(newRecipe);
-      // Fire-and-forget image generation
       fetchAndSetRecipeImage(newRecipe);
     } catch (err: any) {
       setError(t(err.message) || t("errorFailedToGenerate"));
@@ -155,7 +154,6 @@ const AppContent = () => {
     try {
       const newRecipe = await remixLeftovers(ingredients);
       setRecipe(newRecipe);
-      // Fire-and-forget image generation
       fetchAndSetRecipeImage(newRecipe);
     } catch (err: any) {
       setError(t(err.message) || t("errorFailedToGenerate"));
@@ -171,6 +169,21 @@ const AppContent = () => {
     try {
       const newPlan = await generateWeeklyMealPlan(prompt);
       setMealPlan(newPlan);
+      // Fire-and-forget image generation for each recipe in the plan
+      newPlan.plan.forEach(day => {
+        generateRecipeImage(day.recipe.recipeName.en, day.recipe.description.en).then(imageUrl => {
+          if(imageUrl) {
+            setMealPlan(currentPlan => {
+              if (!currentPlan) return null;
+              const updatedPlan = {
+                ...currentPlan,
+                plan: currentPlan.plan.map(p => p.recipe.id === day.recipe.id ? {...p, recipe: {...p.recipe, imageUrl}} : p)
+              };
+              return updatedPlan;
+            })
+          }
+        });
+      });
     } catch (err: any) {
       setError(t(err.message) || t("errorFailedToGenerate"));
     } finally {
@@ -188,11 +201,10 @@ const AppContent = () => {
     try {
       const remixedRecipe = await remixRecipe(recipe, remixPrompt);
       setRecipe(remixedRecipe);
-      // Fire-and-forget image generation for the remixed recipe
       fetchAndSetRecipeImage(remixedRecipe);
     } catch (err: any) {
       setError(t(err.message) || t("errorFailedToGenerate"));
-      setRecipe(null); // Go back to form on error
+      setRecipe(null);
     } finally {
       setIsLoading(false);
     }
@@ -225,12 +237,14 @@ const AppContent = () => {
       setFavorites(prev => {
           const isFavorited = prev.some(fav => fav.id === recipeToAdd.id);
           if (isFavorited) {
+              addToast(t('toastRemovedFromFavorites'), 'info');
               return prev.filter(fav => fav.id !== recipeToAdd.id);
           } else {
+              addToast(t('toastAddedToFavorites'), 'success');
               return [...prev, recipeToAdd];
           }
       });
-  }, [setFavorites]);
+  }, [setFavorites, addToast, t]);
   
   const handleAddToShoppingList = useCallback((ingredients: Ingredient[]) => {
       const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
