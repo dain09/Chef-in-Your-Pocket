@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GraduationCap, ChevronRight, Loader, Home } from 'lucide-react';
@@ -18,6 +18,22 @@ const ChefsAcademyPage: React.FC = () => {
   const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
   const [selectedLesson, setSelectedLesson] = useState<AcademyLesson | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const handleLanguageChange = (lng: string | undefined) => {
+        if (lng) {
+            const direction = i18n.dir(lng);
+            document.documentElement.lang = lng;
+            document.documentElement.dir = direction;
+            document.title = `${t('chefsAcademy')} | ${t('appName')}`;
+        }
+    };
+    handleLanguageChange(i18n.language);
+    i18n.on('languageChanged', handleLanguageChange);
+    return () => {
+        i18n.off('languageChanged', handleLanguageChange);
+    };
+  }, [i18n, t]);
 
   const handleLessonClick = useCallback(async (category: string) => {
     setIsLoading(true);
@@ -58,7 +74,7 @@ const ChefsAcademyPage: React.FC = () => {
         
         <div className="w-full max-w-4xl flex-grow grid grid-cols-1 md:grid-cols-2 gap-4 bg-black/30 backdrop-blur-lg border border-amber-300/10 shadow-lg rounded-2xl p-6">
             <div className="bg-black/20 rounded-lg p-4 space-y-3 overflow-y-auto custom-scrollbar">
-                <h3 className="font-semibold text-amber-300 [dir='rtl']:text-right">{t('academy.lessonsTitle')}</h3>
+                <h3 className="font-semibold text-amber-300 text-start">{t('academy.lessonsTitle')}</h3>
                 {lessonCategories.map((cat, index) => (
                     <motion.button
                         key={index}
@@ -86,12 +102,12 @@ const ChefsAcademyPage: React.FC = () => {
                             animate={{ opacity: 1, y: 0 }}
                             className="pb-4" // Padding bottom to prevent text from being cut off
                         >
-                            <h3 className="text-xl font-bold text-amber-300 break-words [dir='rtl']:text-right">{selectedLesson.title[langKey]}</h3>
-                            <div className="flex flex-col sm:flex-row gap-x-4 gap-y-1 text-sm text-stone-100/70 my-2 [dir='rtl']:text-right">
+                            <h3 className="text-xl font-bold text-amber-300 break-words text-start">{selectedLesson.title[langKey]}</h3>
+                            <div className="flex flex-col sm:flex-row gap-x-4 gap-y-1 text-sm text-stone-100/70 my-2 text-start">
                                 <span><strong>{t('academy.difficultyLabel')}:</strong> {t(`difficulty.${selectedLesson.difficulty}` as const, selectedLesson.difficulty)}</span>
                                 <span><strong>{t('academy.durationLabel')}:</strong> {selectedLesson.duration[langKey]}</span>
                             </div>
-                            <p className="whitespace-pre-wrap text-stone-100 break-words [dir='rtl']:text-right [dir='rtl']:leading-loose">{selectedLesson.content[langKey]}</p>
+                            <p className="whitespace-pre-wrap text-stone-100 break-words text-start [dir='rtl']:leading-loose">{selectedLesson.content[langKey]}</p>
                         </motion.div>
                     ) : (
                          <motion.div key="placeholder" className="flex items-center justify-center h-full text-center text-stone-100/60" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
