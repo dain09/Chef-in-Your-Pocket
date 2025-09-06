@@ -349,6 +349,7 @@ export const generateAcademyLesson = async (category: string): Promise<AcademyLe
     const prompt = `You are a patient and encouraging cooking instructor. Create a single, simple, beginner-friendly lesson for the topic: "${category}". 
     The lesson should be easy to follow for someone who has never cooked before. 
     The difficulty should be 'Beginner'. The duration should be a simple string like '5-10 minutes'.
+    For the Arabic ('ar') text, please use clear, natural, and encouraging language. Format the content with paragraphs for better readability.
     Provide all text in both English ('en') and Arabic ('ar'). Your response MUST be in JSON format and adhere to the provided schema.`;
 
     const lessonSchema = {
