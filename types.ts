@@ -1,3 +1,4 @@
+// FIX: Removed self-import of MultilingualString which was causing a conflict with its own declaration below.
 export interface MultilingualString {
   en: string;
   ar: string;
@@ -71,8 +72,15 @@ export interface AcademyLesson {
   category: MultilingualString;
   duration: MultilingualString;
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
-  content: MultilingualString;
+  content: {
+    introduction: MultilingualString;
+    steps: {
+      title: MultilingualString;
+      description: MultilingualString;
+    }[];
+  };
 }
+
 
 export interface FlavorProfileData {
     sweet: number;

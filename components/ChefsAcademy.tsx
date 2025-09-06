@@ -5,12 +5,23 @@ import { GraduationCap, ChevronRight, Loader, Home } from 'lucide-react';
 import * as geminiService from '../services/geminiService';
 import type { AcademyLesson } from '../types';
 import Logo from './Logo';
+import Footer from './Footer';
 
 const lessonCategories = [
     { en: 'Basic Knife Skills', ar: 'مهارات السكين الأساسية' },
     { en: 'How to Cook Perfect Pasta', ar: 'كيفية طهي المكرونة المثالية' },
-    { en: 'Simple Meals for Expats', ar: 'وجبات بسيطة للمغتربين' },
-    { en: 'Understanding Spices', ar: 'فهم البهارات' },
+    { en: 'Simple Meals for One', ar: 'وجبات بسيطة لشخص واحد' },
+    { en: 'Understanding Spices', ar: 'فهم عالم البهارات' },
+    { en: 'The Art of Sautéing', ar: 'فن التشويح (السوتيه)' },
+    { en: 'Mastering Egg Cooking', ar: 'إتقان طهي البيض' },
+    { en: 'Simple Sauces for Everything', ar: 'صلصات بسيطة لكل شيء' },
+    { en: 'How to Read a Recipe', ar: 'كيف تقرأ وصفة طعام' },
+    { en: 'Kitchen Safety Basics', ar: 'أساسيات السلامة في المطبخ' },
+    { en: 'Grilling for Beginners', ar: 'الشوي للمبتدئين' },
+    { en: 'Introduction to Baking', ar: 'مقدمة في عالم الخبز' },
+    { en: 'Making Great Salads', ar: 'تحضير سلطات رائعة' },
+    { en: 'Secrets to Perfect Rice', ar: 'أسرار الأرز المثالي' },
+    { en: 'Soups from Scratch', ar: 'شوربات من الصفر' },
 ];
 
 const ChefsAcademyPage: React.FC = () => {
@@ -65,14 +76,14 @@ const ChefsAcademyPage: React.FC = () => {
         </a>
       </header>
 
-      <main className="flex-grow flex flex-col items-center justify-center p-4">
+      <main className="flex-grow flex flex-col items-center p-4">
         <div className="text-center mb-6">
             <GraduationCap size={48} className="mx-auto text-amber-400" />
             <h1 className="mt-2 text-3xl font-bold text-stone-100">{t('chefsAcademy')}</h1>
             <p className="mt-1 text-stone-100/70">{t('academy.description')}</p>
         </div>
         
-        <div className="w-full max-w-4xl flex-grow grid grid-cols-1 md:grid-cols-2 gap-4 bg-black/30 backdrop-blur-lg border border-amber-300/10 shadow-lg rounded-2xl p-6">
+        <div className="w-full max-w-4xl flex-grow grid grid-cols-1 md:grid-cols-2 gap-4 bg-black/30 backdrop-blur-lg border border-amber-300/10 shadow-lg rounded-2xl p-6 min-h-[60vh]">
             <div className="bg-black/20 rounded-lg p-4 space-y-3 overflow-y-auto custom-scrollbar">
                 <h3 className="font-semibold text-amber-300 text-start">{t('academy.lessonsTitle')}</h3>
                 {lessonCategories.map((cat, index) => (
@@ -100,14 +111,30 @@ const ChefsAcademyPage: React.FC = () => {
                             key={selectedLesson.id}
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="pb-4" // Padding bottom to prevent text from being cut off
+                            className="pb-4 space-y-6"
                         >
-                            <h3 className="text-xl font-bold text-amber-300 break-words text-start">{selectedLesson.title[langKey]}</h3>
-                            <div className="flex flex-col sm:flex-row gap-x-4 gap-y-1 text-sm text-stone-100/70 my-2 text-start">
-                                <span><strong>{t('academy.difficultyLabel')}:</strong> {t(`difficulty.${selectedLesson.difficulty}` as const, selectedLesson.difficulty)}</span>
-                                <span><strong>{t('academy.durationLabel')}:</strong> {selectedLesson.duration[langKey]}</span>
+                            <div className="text-start">
+                                <h3 className="text-xl font-bold text-amber-300 break-words">{selectedLesson.title[langKey]}</h3>
+                                <div className="flex flex-col sm:flex-row gap-x-4 gap-y-1 text-sm text-stone-100/70 my-2">
+                                    <span><strong>{t('academy.difficultyLabel')}:</strong> {t(`difficulty.${selectedLesson.difficulty}` as const, selectedLesson.difficulty)}</span>
+                                    <span><strong>{t('academy.durationLabel')}:</strong> {selectedLesson.duration[langKey]}</span>
+                                </div>
                             </div>
-                            <p className="whitespace-pre-wrap text-stone-100 break-words text-start [dir='rtl']:leading-loose">{selectedLesson.content[langKey]}</p>
+
+                            <p className="whitespace-pre-wrap text-stone-100 text-start [dir='rtl']:leading-loose">{selectedLesson.content.introduction[langKey]}</p>
+
+                            <ol className="space-y-4">
+                                {selectedLesson.content.steps.map((step, index) => (
+                                    <li key={index} className="flex gap-3 items-start text-start">
+                                        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-black/30 text-amber-300 font-bold rounded-full mt-1">{index + 1}</div>
+                                        <div>
+                                            <h4 className="font-semibold text-stone-100">{step.title[langKey]}</h4>
+                                            <p className="text-stone-100/80 [dir='rtl']:leading-loose">{step.description[langKey]}</p>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ol>
+
                         </motion.div>
                     ) : (
                          <motion.div key="placeholder" className="flex items-center justify-center h-full text-center text-stone-100/60" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
@@ -118,6 +145,7 @@ const ChefsAcademyPage: React.FC = () => {
             </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 };

@@ -347,10 +347,11 @@ export const getExtraRecipeInfo = async (recipeTitle: string, infoType: 'nutriti
 
 export const generateAcademyLesson = async (category: string): Promise<AcademyLesson | null> => {
     const prompt = `You are a patient and encouraging cooking instructor. Create a single, simple, beginner-friendly lesson for the topic: "${category}". 
-    The lesson should be easy to follow for someone who has never cooked before. 
+    The lesson must be well-structured with an introduction and distinct steps.
+    Each step should have a clear title and a descriptive paragraph.
     The difficulty should be 'Beginner'. The duration should be a simple string like '5-10 minutes'.
-    For the Arabic ('ar') text, please use clear, natural, and encouraging language. Format the content with paragraphs for better readability.
-    Provide all text in both English ('en') and Arabic ('ar'). Your response MUST be in JSON format and adhere to the provided schema.`;
+    For the Arabic ('ar') text, please use clear, natural, and encouraging language.
+    Your response MUST be in JSON format and adhere to the provided schema.`;
 
     const lessonSchema = {
         type: Type.OBJECT,
@@ -359,7 +360,24 @@ export const generateAcademyLesson = async (category: string): Promise<AcademyLe
             category: { type: Type.OBJECT, properties: { en: { type: Type.STRING }, ar: { type: Type.STRING } }, required: ['en', 'ar'] },
             duration: { type: Type.OBJECT, properties: { en: { type: Type.STRING }, ar: { type: Type.STRING } }, required: ['en', 'ar'] },
             difficulty: { type: Type.STRING, enum: ['Beginner', 'Intermediate', 'Advanced'] },
-            content: { type: Type.OBJECT, properties: { en: { type: Type.STRING }, ar: { type: Type.STRING } }, required: ['en', 'ar'] },
+            content: {
+                type: Type.OBJECT,
+                properties: {
+                    introduction: { type: Type.OBJECT, properties: { en: { type: Type.STRING }, ar: { type: Type.STRING } }, required: ['en', 'ar'] },
+                    steps: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                title: { type: Type.OBJECT, properties: { en: { type: Type.STRING }, ar: { type: Type.STRING } }, required: ['en', 'ar'] },
+                                description: { type: Type.OBJECT, properties: { en: { type: Type.STRING }, ar: { type: Type.STRING } }, required: ['en', 'ar'] },
+                            },
+                            required: ['title', 'description'],
+                        }
+                    }
+                },
+                required: ['introduction', 'steps'],
+            }
         },
         required: ['title', 'category', 'duration', 'difficulty', 'content'],
     };

@@ -53,20 +53,6 @@ const LATEST_VERSION = changelog[0].version;
 // FIX: Initialize Gemini AI client for image analysis as it's not exported from the service.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-// A simple component for displaying extra recipe info fetched on demand
-const InfoCard: React.FC<{ title: string; icon: React.ElementType; content: MultilingualString | null; isLoading: boolean }> = ({ title, icon: Icon, content, isLoading }) => {
-    const { i18n } = useTranslation();
-    const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
-    return (
-        <GlassCard className="p-4 space-y-2 bg-black/20">
-            <h4 className="font-semibold text-amber-300 flex items-center gap-2"><Icon size={18} /> {title}</h4>
-            <div className="text-sm text-stone-100/80 min-h-[40px]">
-                {isLoading ? '...' : content ? content[langKey] : ''}
-            </div>
-        </GlassCard>
-    );
-};
-
 
 // The main view for a single recipe, handling details, scaling, and actions.
 const RecipeDetailView: React.FC<{ recipe: Recipe, onBack: () => void, onToggleFavorite: (id: string) => void, isFavorite: boolean, onAddToShoppingList: (items: string[]) => void, onRemix: (recipe: Recipe) => void, onStartCooking: (recipe: Recipe) => void }> =
@@ -77,10 +63,9 @@ const RecipeDetailView: React.FC<{ recipe: Recipe, onBack: () => void, onToggleF
     const { addToast } = useToast();
 
     const [servings, setServings] = useState(recipe.servings);
-    const [substitutions, setSubstitutions] = useState<MultilingualString | null>(null);
-    const [nutritionInfo, setNutritionInfo] = useState<MultilingualString | null>(null);
-    const [trivia, setTrivia] = useState<MultilingualString | null>(null);
-    const [drinks, setDrinks] = useState<MultilingualString | null>(null);
+    const [activeTab, setActiveTab] = useState<'ingredients' | 'steps'>('ingredients');
+    const [activeInfoType, setActiveInfoType] = useState< 'substitutions' | 'nutrition' | 'trivia' | 'drinks' | null>(null);
+    const [infoContent, setInfoContent] = useState<MultilingualString | null>(null);
     const [isLoadingInfo, setIsLoadingInfo] = useState< 'substitutions' | 'nutrition' | 'trivia' | 'drinks' | false>(false);
 
     const blobImageUrl = useBlobUrl(recipe.imageUrl);
@@ -88,25 +73,32 @@ const RecipeDetailView: React.FC<{ recipe: Recipe, onBack: () => void, onToggleF
 
     const handleGetInfo = useCallback(async (infoType: 'substitutions' | 'nutrition' | 'trivia' | 'drinks') => {
         if (isLoadingInfo) return;
+
+        if (activeInfoType === infoType) {
+            setActiveInfoType(null);
+            setInfoContent(null);
+            return;
+        }
+
         setIsLoadingInfo(infoType);
+        setActiveInfoType(infoType);
+        setInfoContent(null);
         try {
             let result: MultilingualString | null = null;
             if (infoType === 'substitutions') {
                 result = await geminiService.generateSubstitutions(recipe.ingredients);
-                setSubstitutions(result);
             } else {
                 result = await geminiService.getExtraRecipeInfo(recipe.title.en, infoType);
-                if (infoType === 'nutrition') setNutritionInfo(result);
-                if (infoType === 'trivia') setTrivia(result);
-                if (infoType === 'drinks') setDrinks(result);
             }
+            setInfoContent(result);
         } catch (error) {
             console.error(`Failed to fetch ${infoType}`, error);
             addToast(t('toastError'), 'error');
+            setActiveInfoType(null);
         } finally {
             setIsLoadingInfo(false);
         }
-    }, [recipe.ingredients, recipe.title.en, t, addToast, isLoadingInfo]);
+    }, [recipe.ingredients, recipe.title.en, t, addToast, isLoadingInfo, activeInfoType]);
 
     const scaledIngredients = useMemo(() => {
         if (servings === recipe.servings) return recipe.ingredients;
@@ -116,7 +108,6 @@ const RecipeDetailView: React.FC<{ recipe: Recipe, onBack: () => void, onToggleF
                 const parsed = parseIngredient(amountStr);
                  if (parsed && parsed.quantity > 0) {
                     const newQuantity = parsed.quantity * scaleFactor;
-                    // Handle fractions and clean up decimals
                     const formattedQuantity = Number.isInteger(newQuantity) ? newQuantity : newQuantity.toFixed(1).replace(/\.0$/, '');
                     return `${formattedQuantity} ${parsed.unit}`;
                 }
@@ -133,6 +124,29 @@ const RecipeDetailView: React.FC<{ recipe: Recipe, onBack: () => void, onToggleF
         });
     }, [servings, recipe.ingredients, recipe.servings]);
 
+    const TabButton: React.FC<{ title: string, isActive: boolean, onClick: () => void }> = ({ title, isActive, onClick }) => (
+        <button
+            onClick={onClick}
+            className={`relative py-3 px-6 font-semibold transition-colors w-1/2 ${isActive ? 'text-amber-300' : 'text-stone-100/60 hover:text-stone-100/80'}`}
+        >
+            {title}
+            {isActive && <motion.div className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-300" layoutId="tab-underline" />}
+        </button>
+    );
+
+    const InfoButton: React.FC<{ icon: React.ElementType, label: string, onClick: () => void, isActive: boolean, isLoading: boolean }> = ({ icon: Icon, label, onClick, isActive, isLoading }) => (
+        <motion.button 
+            onClick={onClick} 
+            disabled={!!isLoading}
+            className={`flex-1 flex flex-col items-center justify-center gap-2 p-3 bg-black/20 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-center
+                ${isActive ? 'text-amber-300 ring-2 ring-amber-400' : 'text-stone-100/80 hover:bg-black/30'}
+                ${isLoading ? 'animate-pulse' : ''}
+            `}
+        >
+            <Icon size={20} />
+            <span className="text-xs">{label}</span>
+        </motion.button>
+    );
 
     return (
         <motion.div
@@ -156,17 +170,20 @@ const RecipeDetailView: React.FC<{ recipe: Recipe, onBack: () => void, onToggleF
                     </motion.button>
                 </div>
                 
-                {blobImageUrl && recipe.imageUrl !== 'IMAGE_GENERATION_FAILED' ? (
-                    <img src={blobImageUrl} alt={recipe.title[langKey]} className="w-full h-64 object-cover rounded-lg" />
-                ) : (
-                     <div className="w-full h-64 bg-black/20 rounded-lg flex items-center justify-center text-amber-500/50">
-                        <Utensils size={64} />
+                <div className={`grid grid-cols-1 ${blobImageUrl && recipe.imageUrl !== 'IMAGE_GENERATION_FAILED' ? 'md:grid-cols-2' : 'md:grid-cols-1'} gap-6 items-center`}>
+                    {blobImageUrl && recipe.imageUrl !== 'IMAGE_GENERATION_FAILED' ? (
+                        <motion.img 
+                            src={blobImageUrl} 
+                            alt={recipe.title[langKey]} 
+                            className="w-full h-64 object-cover rounded-lg" 
+                            initial={{opacity: 0}} animate={{opacity: 1}}
+                        />
+                    ) : null}
+                    
+                    <div className="text-center md:text-start space-y-2 md:col-span-1">
+                        <h1 className="text-3xl font-bold text-stone-100">{recipe.title[langKey]}</h1>
+                        <p className="text-stone-100/80 max-w-2xl mx-auto md:mx-0">{recipe.description[langKey]}</p>
                     </div>
-                )}
-                
-                <div className="text-center space-y-2">
-                    <h1 className="text-3xl font-bold text-stone-100">{recipe.title[langKey]}</h1>
-                    <p className="text-stone-100/80 max-w-2xl mx-auto">{recipe.description[langKey]}</p>
                 </div>
                 
                 <div className="flex justify-center flex-wrap gap-4 sm:gap-8 text-stone-100/80">
@@ -191,98 +208,84 @@ const RecipeDetailView: React.FC<{ recipe: Recipe, onBack: () => void, onToggleF
                     </motion.button>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div>
-                        <h3 className="text-2xl font-bold text-amber-300 mb-4">{t('ingredients')}</h3>
-                        <ul className="space-y-2">
-                        {scaledIngredients.map((ing, i) => (
-                            <li key={i} className="flex gap-3 items-start p-2 bg-black/10 rounded-md">
-                                <Check className="text-amber-400 mt-1 flex-shrink-0" size={16}/>
-                                <div>
-                                    <span className="font-semibold text-stone-100">{ing.name[langKey]}</span>
-                                    <span className="text-stone-100/70"> - {ing.amount[langKey]}</span>
-                                </div>
-                            </li>
-                        ))}
-                        </ul>
+                <div className="pt-4 border-t border-amber-300/10">
+                    <div className="flex border-b border-amber-300/10">
+                        <TabButton title={t('ingredients')} isActive={activeTab === 'ingredients'} onClick={() => setActiveTab('ingredients')} />
+                        <TabButton title={t('Steps')} isActive={activeTab === 'steps'} onClick={() => setActiveTab('steps')} />
                     </div>
-                     <div>
-                        <h3 className="text-2xl font-bold text-amber-300 mb-4">{t('Steps')}</h3>
-                        <ol className="space-y-4">
-                        {recipe.steps.map((step, i) => (
-                             <li key={i} className="flex gap-3 items-start">
-                                <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-black/20 text-amber-300 font-bold rounded-full">{i + 1}</div>
-                                <p className="text-stone-100/90 pt-1">{step.text[langKey]}</p>
-                            </li>
-                        ))}
-                        </ol>
+                    <div className="mt-4 min-h-[300px]">
+                        <AnimatePresence mode="wait">
+                            {activeTab === 'ingredients' ? (
+                                <motion.div key="ingredients" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                                    <ul className="space-y-2">
+                                    {scaledIngredients.map((ing, i) => (
+                                        <li key={i} className="flex gap-3 items-start p-2 bg-black/10 rounded-md">
+                                            <Check className="text-amber-400 mt-1 flex-shrink-0" size={16}/>
+                                            <div>
+                                                <span className="font-semibold text-stone-100">{ing.name[langKey]}</span>
+                                                <span className="text-stone-100/70"> - {ing.amount[langKey]}</span>
+                                            </div>
+                                        </li>
+                                    ))}
+                                    </ul>
+                                </motion.div>
+                            ) : (
+                                <motion.div key="steps" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
+                                    <ol className="space-y-4">
+                                    {recipe.steps.map((step, i) => (
+                                        <li key={i} className="flex gap-3 items-start">
+                                            <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-black/20 text-amber-300 font-bold rounded-full">{i + 1}</div>
+                                            <p className="text-stone-100/90 pt-1">{step.text[langKey]}</p>
+                                        </li>
+                                    ))}
+                                    </ol>
+                                    {embedUrl && (
+                                        <div className="pt-4 border-t border-amber-300/10">
+                                            <h3 className="text-2xl font-bold text-amber-300 mb-4 text-center">{t('Tutorial')}</h3>
+                                            <div className="aspect-video">
+                                                <iframe
+                                                    className="w-full h-full rounded-lg"
+                                                    src={embedUrl}
+                                                    title="YouTube video player"
+                                                    frameBorder="0"
+                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                    allowFullScreen>
+                                                </iframe>
+                                            </div>
+                                        </div>
+                                    )}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 </div>
                 
-                {embedUrl && (
-                     <div className="pt-4 border-t border-amber-300/10">
-                        <h3 className="text-2xl font-bold text-amber-300 mb-4 text-center">{t('Tutorial')}</h3>
-                         <div className="aspect-video">
-                            <iframe
-                                className="w-full h-full rounded-lg"
-                                src={embedUrl}
-                                title="YouTube video player"
-                                frameBorder="0"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowFullScreen>
-                            </iframe>
-                        </div>
-                    </div>
-                )}
-
                 <div className="pt-4 border-t border-amber-300/10 space-y-4">
-                    <motion.button 
-                        onClick={() => handleGetInfo('substitutions')} 
-                        disabled={!!isLoadingInfo}
-                        className={`w-full p-2 text-center text-amber-300 bg-black/20 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed ${isLoadingInfo === 'substitutions' ? 'animate-pulse ring-2 ring-amber-400' : ''}`}
-                    >
-                        {t('suggestSubstitutions')}
-                    </motion.button>
-                    <AnimatePresence>
-                        {substitutions && <InfoCard title={t('substitutionsModalTitle')} icon={Soup} content={substitutions} isLoading={isLoadingInfo === 'substitutions'} />}
-                    </AnimatePresence>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <motion.button 
-                            onClick={() => handleGetInfo('nutrition')}
-                            disabled={!!isLoadingInfo}
-                            className={`w-full p-2 text-center text-amber-300 bg-black/20 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed ${isLoadingInfo === 'nutrition' ? 'animate-pulse ring-2 ring-amber-400' : ''}`}
-                        >
-                            {t('nutritionalInfo')}
-                        </motion.button>
-                        <motion.button
-                            onClick={() => handleGetInfo('trivia')}
-                            disabled={!!isLoadingInfo}
-                            className={`w-full p-2 text-center text-amber-300 bg-black/20 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed ${isLoadingInfo === 'trivia' ? 'animate-pulse ring-2 ring-amber-400' : ''}`}
-                        >
-                            {t('funFacts')}
-                        </motion.button>
-                        <motion.button
-                            onClick={() => handleGetInfo('drinks')}
-                            disabled={!!isLoadingInfo}
-                            className={`w-full p-2 text-center text-amber-300 bg-black/20 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed ${isLoadingInfo === 'drinks' ? 'animate-pulse ring-2 ring-amber-400' : ''}`}
-                        >
-                            {t('suggestedDrinks')}
-                        </motion.button>
+                    <h3 className="text-2xl font-bold text-amber-300 text-center">{t('chefsTips')}</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <InfoButton icon={Soup} label={t('suggestSubstitutions')} onClick={() => handleGetInfo('substitutions')} isActive={activeInfoType === 'substitutions'} isLoading={isLoadingInfo === 'substitutions'} />
+                        <InfoButton icon={BrainCircuit} label={t('nutritionalInfo')} onClick={() => handleGetInfo('nutrition')} isActive={activeInfoType === 'nutrition'} isLoading={isLoadingInfo === 'nutrition'} />
+                        <InfoButton icon={Lightbulb} label={t('funFacts')} onClick={() => handleGetInfo('trivia')} isActive={activeInfoType === 'trivia'} isLoading={isLoadingInfo === 'trivia'} />
+                        <InfoButton icon={GlassWater} label={t('suggestedDrinks')} onClick={() => handleGetInfo('drinks')} isActive={activeInfoType === 'drinks'} isLoading={isLoadingInfo === 'drinks'} />
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                         <AnimatePresence>
-                            {nutritionInfo && <InfoCard title={t('nutritionalInfo')} icon={BrainCircuit} content={nutritionInfo} isLoading={isLoadingInfo === 'nutrition'} />}
-                         </AnimatePresence>
-                         <AnimatePresence>
-                            {trivia && <InfoCard title={t('funFacts')} icon={Lightbulb} content={trivia} isLoading={isLoadingInfo === 'trivia'} />}
-                         </AnimatePresence>
-                         <AnimatePresence>
-                            {drinks && <InfoCard title={t('suggestedDrinks')} icon={GlassWater} content={drinks} isLoading={isLoadingInfo === 'drinks'} />}
-                         </AnimatePresence>
+                    <div className="min-h-[100px] bg-black/20 rounded-lg p-4 transition-all">
+                        <AnimatePresence mode="wait">
+                            {isLoadingInfo ? (
+                                <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex justify-center items-center h-full text-stone-100/70">
+                                    ...
+                                </motion.div>
+                            ) : infoContent ? (
+                                <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-stone-100/90 text-sm">
+                                    {infoContent[langKey]}
+                                </motion.div>
+                            ) : (
+                                <motion.div key="placeholder" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex justify-center items-center h-full text-stone-100/70">
+                                    {t('selectTip')}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 </div>
-
             </GlassCard>
         </motion.div>
     );
