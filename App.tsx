@@ -503,9 +503,11 @@ function App() {
       
       <div className={`min-h-screen flex flex-col text-stone-100 font-sans transition-opacity duration-1000 ${isInitialized ? 'opacity-100' : 'opacity-0'}`}>
         <header className="w-full max-w-7xl mx-auto p-4 flex justify-between items-center">
-          <Logo className="w-12 h-12 text-amber-300" />
-          <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-4">
+            <Logo className="w-12 h-12 text-amber-300" />
             <LanguageSwitcher />
+          </div>
+          <div className="flex items-center gap-2 sm:gap-4">
             <motion.button whileHover={{scale: 1.1}} whileTap={{scale:0.9}} onClick={() => setIsFavoritesOpen(true)} className="p-2 bg-black/20 rounded-lg"><Heart /></motion.button>
             <motion.button whileHover={{scale: 1.1}} whileTap={{scale:0.9}} onClick={() => setIsPantryOpen(true)} className="p-2 bg-black/20 rounded-lg"><Archive /></motion.button>
             <motion.button whileHover={{scale: 1.1}} whileTap={{scale:0.9}} onClick={() => setIsChefsAcademyOpen(true)} className="p-2 bg-black/20 rounded-lg"><GraduationCap /></motion.button>

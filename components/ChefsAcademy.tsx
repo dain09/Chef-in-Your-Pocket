@@ -78,7 +78,7 @@ const ChefsAcademy: React.FC<ChefsAcademyProps> = ({ onClose }) => {
                     </motion.button>
                 ))}
             </div>
-            <div className="bg-black/20 rounded-lg p-4 overflow-y-auto custom-scrollbar">
+            <div className="bg-black/20 rounded-lg p-4 overflow-y-auto custom-scrollbar min-w-0">
                 <AnimatePresence mode="wait">
                     {isLoading ? (
                         <motion.div key="loader" className="flex items-center justify-center h-full" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
@@ -90,12 +90,12 @@ const ChefsAcademy: React.FC<ChefsAcademyProps> = ({ onClose }) => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                         >
-                            <h3 className="text-xl font-bold text-amber-300">{selectedLesson.title[langKey]}</h3>
+                            <h3 className="text-xl font-bold text-amber-300 break-words">{selectedLesson.title[langKey]}</h3>
                             <div className="flex gap-4 text-sm text-stone-100/70 my-2">
                                 <span><strong>{t('academy.difficultyLabel')}:</strong> {t(`difficulty.${selectedLesson.difficulty}` as const, selectedLesson.difficulty)}</span>
                                 <span><strong>{t('academy.durationLabel')}:</strong> {selectedLesson.duration[langKey]}</span>
                             </div>
-                            <p className="whitespace-pre-wrap text-stone-100/90 break-words">{selectedLesson.content[langKey]}</p>
+                            <p className="whitespace-pre-wrap text-stone-100 break-words">{selectedLesson.content[langKey]}</p>
                         </motion.div>
                     ) : (
                          <motion.div key="placeholder" className="flex items-center justify-center h-full text-center text-stone-100/60" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>

@@ -72,7 +72,6 @@ i18n
           'expired': 'Expired',
           'Recipe of the Day': 'Recipe of the Day',
           'viewRecipe': 'View Recipe',
-          'banner.solidarityMessage': 'Our hearts are with our brothers and sisters in Gaza, Palestine, and Sudan. May peace and justice prevail.',
           'footer.copyright': '© {{year}} Made with ❤️ by {{name}}',
           'onboarding.steps': [
               { "title": "Welcome!", "description": "Let's get you started with your personal pocket chef." },
@@ -187,7 +186,6 @@ i18n
           'expired': 'منتهي الصلاحية',
           'Recipe of the Day': 'وصفة اليوم',
           'viewRecipe': 'عرض الوصفة',
-          'banner.solidarityMessage': 'قلوبنا مع إخوتنا وأخواتنا في غزة وفلسطين والسودان. سائلين الله أن يعم السلام والعدل.',
           'footer.copyright': '© {{year}} صنع بـ ❤️ بواسطة {{name}}',
           'onboarding.steps': [
             { "title": "أهلاً بك!", "description": "لنبدأ رحلتك مع شيفك الشخصي في جيبك." },

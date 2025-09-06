@@ -385,3 +385,33 @@ export const generateAcademyLesson = async (category: string): Promise<AcademyLe
         return null;
     }
 };
+
+export const getSupportMessage = async (): Promise<MultilingualString | null> => {
+    const prompt = "Generate a short, single-sentence, positive, and supportive message for humanity, suitable for a web app footer. It should be uplifting and universal, avoiding specific events or politics. Provide the response in both English ('en') and Arabic ('ar'). Response must be JSON.";
+    
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        en: { type: Type.STRING },
+                        ar: { type: Type.STRING },
+                    },
+                    required: ['en', 'ar'],
+                }
+            },
+        });
+        return parseJsonResponse<MultilingualString>(response.text);
+    } catch (error) {
+        console.error("Error generating support message:", error);
+        // Fallback message
+        return {
+            en: "Wishing you peace and delicious meals.",
+            ar: "نتمنى لكم السلام والوجبات الشهية."
+        };
+    }
+};

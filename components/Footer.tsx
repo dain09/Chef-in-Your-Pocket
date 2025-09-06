@@ -1,11 +1,25 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Github, Send } from 'lucide-react';
 import { motion } from 'framer-motion';
+import * as geminiService from '../services/geminiService';
+import type { MultilingualString } from '../types';
 
 const Footer: React.FC = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+    const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
     const currentYear = new Date().getFullYear();
+    const [supportMessage, setSupportMessage] = useState<MultilingualString | null>(null);
+
+    useEffect(() => {
+        const fetchMessage = async () => {
+            const message = await geminiService.getSupportMessage();
+            if (message) {
+                setSupportMessage(message);
+            }
+        };
+        fetchMessage();
+    }, []);
 
     return (
         <motion.footer 
@@ -14,8 +28,8 @@ const Footer: React.FC = () => {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.7, delay: 3.0 }}
         >
-            <p className="mb-4 text-base font-semibold text-stone-100/80">
-              {t('banner.solidarityMessage')}
+            <p className="mb-4 text-base font-semibold text-stone-100/80 h-6 flex items-center justify-center">
+              {supportMessage ? supportMessage[langKey] : '...'}
             </p>
             <div className="flex justify-center items-center gap-6 mb-2">
                 <motion.a 
