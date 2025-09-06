@@ -3,75 +3,65 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import type { Menu, Recipe } from '../types';
 import GlassCard from './GlassCard';
-import { ListPlus, ImageOff } from 'lucide-react';
-import { useBlobUrl } from '../hooks/useBlobUrl';
+import RecipeCard from './RecipeCard';
+import { Utensils, Star, IceCream } from 'lucide-react';
 
 interface MenuCardProps {
-  menu: Menu;
-  onAddToShoppingList: (menu: Menu) => void;
-  onViewRecipe: (recipe: Recipe) => void;
+    menu: Menu;
+    onRecipeSelect: (recipe: Recipe) => void;
 }
 
-const CourseCard: React.FC<{ title: string; recipe: Recipe; onSelect: () => void; langKey: 'en' | 'ar' }> = ({ title, recipe, onSelect, langKey }) => {
-    const { t } = useTranslation();
-    const blobImageUrl = useBlobUrl(recipe.imageUrl);
+const MenuCard: React.FC<MenuCardProps> = ({ menu, onRecipeSelect }) => {
+    const { t, i18n } = useTranslation();
+    const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
+
+    const courseVariants = {
+        hidden: { opacity: 0, x: -20 },
+        visible: (i: number) => ({
+            opacity: 1,
+            x: 0,
+            transition: {
+                delay: i * 0.2,
+            },
+        }),
+    };
+
     return (
-        <GlassCard className="p-4 flex flex-col sm:flex-row gap-4 items-center bg-white/20">
-            <div className="w-full sm:w-1/3 h-40 sm:h-full flex-shrink-0 rounded-lg overflow-hidden">
-                {recipe.imageUrl && recipe.imageUrl !== 'error' ? (
-                    <img src={blobImageUrl} alt={recipe.recipeName[langKey]} className="w-full h-full object-cover"/>
-                ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-white/10 text-pink-900/30">
-                        <ImageOff size={40} />
-                    </div>
-                )}
-            </div>
-            <div className="flex-grow text-center sm:text-left">
-                <p className="font-semibold text-pink-900/70">{title}</p>
-                <h3 className="text-xl font-bold text-pink-900">{recipe.recipeName[langKey]}</h3>
-                <p className="text-sm text-pink-900/80 mt-1 line-clamp-2">{recipe.description[langKey]}</p>
-                <button 
-                    onClick={onSelect} 
-                    className="mt-3 text-sm font-semibold text-purple-600 hover:text-purple-500"
-                >
-                    {t('viewRecipe', 'View Recipe')}
-                </button>
-            </div>
-        </GlassCard>
+        <motion.div
+            className="w-full max-w-4xl mx-auto"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+        >
+            <GlassCard className="p-6 space-y-6">
+                <div className="text-center">
+                    <h2 className="text-3xl font-bold text-amber-300">{t('Menu for')} "{menu.occasion}"</h2>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <motion.div custom={0} variants={courseVariants} initial="hidden" animate="visible">
+                        <CourseSection icon={Star} title={t('Appetizer')} recipe={menu.appetizer} onRecipeSelect={onRecipeSelect} />
+                    </motion.div>
+                     <motion.div custom={1} variants={courseVariants} initial="hidden" animate="visible">
+                        <CourseSection icon={Utensils} title={t('Main Course')} recipe={menu.mainCourse} onRecipeSelect={onRecipeSelect} />
+                    </motion.div>
+                     <motion.div custom={2} variants={courseVariants} initial="hidden" animate="visible">
+                        <CourseSection icon={IceCream} title={t('Dessert')} recipe={menu.dessert} onRecipeSelect={onRecipeSelect} />
+                    </motion.div>
+                </div>
+            </GlassCard>
+        </motion.div>
     );
 };
 
-const MenuCard: React.FC<MenuCardProps> = ({ menu, onAddToShoppingList, onViewRecipe }) => {
-  const { t, i18n } = useTranslation();
-  const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: 'easeOut' }}
-      className="w-full max-w-4xl mx-auto space-y-6"
-    >
-        <GlassCard className="p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row justify-between items-center flex-wrap gap-4 mb-6">
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-pink-900 text-center sm:text-left">{menu.occasion[langKey]}</h1>
-                <motion.button
-                  onClick={() => onAddToShoppingList(menu)}
-                  className="flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-pink-500/80 text-white text-base font-semibold hover:bg-pink-500 transition-colors w-full sm:w-auto"
-                  whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                >
-                  <ListPlus className="w-5 h-5" /> {t('addAllToShoppingList')}
-                </motion.button>
-            </div>
-            
-            <div className="space-y-4">
-                <CourseCard title={t('appetizer')} recipe={menu.appetizer} onSelect={() => onViewRecipe(menu.appetizer)} langKey={langKey} />
-                <CourseCard title={t('mainCourse')} recipe={menu.mainCourse} onSelect={() => onViewRecipe(menu.mainCourse)} langKey={langKey} />
-                <CourseCard title={t('dessert')} recipe={menu.dessert} onSelect={() => onViewRecipe(menu.dessert)} langKey={langKey} />
-            </div>
-        </GlassCard>
-    </motion.div>
-  );
+const CourseSection: React.FC<{ icon: React.ElementType, title: string, recipe: Recipe, onRecipeSelect: (recipe: Recipe) => void }> = ({ icon: Icon, title, recipe, onRecipeSelect }) => {
+    return (
+        <div className="space-y-3">
+            <h3 className="flex items-center gap-2 text-xl font-semibold text-stone-100">
+                <Icon className="text-amber-400" />
+                {title}
+            </h3>
+            <RecipeCard recipe={recipe} onSelect={onRecipeSelect} isCompact />
+        </div>
+    );
 };
 
 export default MenuCard;

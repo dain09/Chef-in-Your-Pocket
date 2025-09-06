@@ -1,123 +1,65 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import type { Recipe } from '../types';
-import { getRecipeOfTheDay, generateRecipeImage } from '../services/geminiService';
 import GlassCard from './GlassCard';
-import { Loader2, ImageOff } from 'lucide-react';
+import type { Recipe } from '../types';
+import { ChefHat, Clock, Utensils } from 'lucide-react';
+import { audioService } from '../services/audioService';
 import { useBlobUrl } from '../hooks/useBlobUrl';
 
 interface RecipeOfTheDayProps {
-  onSelectRecipe: (recipe: Recipe) => void;
-}
-
-interface CachedRecipe {
   recipe: Recipe;
-  timestamp: number;
+  onRecipeSelect: (recipe: Recipe) => void;
 }
 
-const RecipeOfTheDay: React.FC<RecipeOfTheDayProps> = ({ onSelectRecipe }) => {
+const RecipeOfTheDay: React.FC<RecipeOfTheDayProps> = ({ recipe, onRecipeSelect }) => {
   const { t, i18n } = useTranslation();
   const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
-  const [recipe, setRecipe] = useState<Recipe | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const blobImageUrl = useBlobUrl(recipe?.imageUrl);
   
-  useEffect(() => {
-    const fetchRecipe = async () => {
-      setIsLoading(true);
-      const cacheKey = 'recipeOfTheDay';
-      const cachedData = localStorage.getItem(cacheKey);
-      const oneDay = 24 * 60 * 60 * 1000;
+  const blobImageUrl = useBlobUrl(recipe.imageUrl);
 
-      if (cachedData) {
-        try {
-          const { recipe: cachedRecipe, timestamp }: CachedRecipe = JSON.parse(cachedData);
-          if (Date.now() - timestamp < oneDay) {
-            setRecipe(cachedRecipe);
-            setIsLoading(false);
-            return;
-          }
-        } catch (e) {
-          localStorage.removeItem(cacheKey);
-        }
-      }
-
-      try {
-        const newRecipe = await getRecipeOfTheDay();
-        setRecipe(newRecipe); // Set recipe immediately without image
-        
-        generateRecipeImage(newRecipe.recipeName.en, newRecipe.description.en).then(imageUrl => {
-            const finalImageUrl = imageUrl ?? 'error';
-            const recipeWithImage = { ...newRecipe, imageUrl: finalImageUrl };
-            setRecipe(recipeWithImage);
-            localStorage.setItem(cacheKey, JSON.stringify({ recipe: recipeWithImage, timestamp: Date.now() }));
-        });
-
-      } catch (error) {
-        console.error("Failed to fetch Recipe of the Day:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchRecipe();
-  }, []);
-
-  if (isLoading) {
-    return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1, transition: { delay: 0.5 } }}
-            className="w-full max-w-2xl mx-auto mt-8"
-        >
-            <GlassCard className="p-6 text-center text-pink-900/70">
-                <Loader2 className="animate-spin mx-auto mb-2" />
-                <p>{t('generating')} {t('recipeOfTheDayTitle')}</p>
-            </GlassCard>
-        </motion.div>
-    );
-  }
-
-  if (!recipe) {
-    return null;
+  const handleSelect = () => {
+    audioService.playSwoosh();
+    onRecipeSelect(recipe);
   }
 
   return (
-    <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0, transition: { delay: 0.5 } }}
-        className="relative z-10 w-full max-w-2xl mx-auto mt-12"
+    <motion.div 
+      className="w-full max-w-2xl mx-auto"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.5 }}
     >
-        <GlassCard className="p-4 sm:p-6">
-            <h3 className="text-xl sm:text-2xl font-bold text-pink-900 text-center mb-4">{t('recipeOfTheDayTitle')}</h3>
-            <div className="flex flex-col md:flex-row gap-4">
-                <div className="md:w-1/3 h-48 md:h-auto rounded-lg overflow-hidden bg-white/10 flex items-center justify-center text-pink-900/30">
-                    {recipe.imageUrl === 'error' ? (
-                        <div className="flex flex-col items-center gap-2">
-                           <ImageOff size={40} />
-                           <p className="text-xs">{t('errorImage')}</p>
-                        </div>
-                    ) : recipe.imageUrl ? (
-                        <img src={blobImageUrl} alt={recipe.recipeName[langKey]} className="w-full h-full object-cover" />
-                    ) : (
-                        <Loader2 size={32} className="animate-spin" />
-                    )}
-                </div>
-                <div className="flex-grow flex flex-col justify-center text-center md:text-left">
-                    <h4 className="text-lg font-bold text-pink-900">{recipe.recipeName[langKey]}</h4>
-                    <p className="text-sm text-pink-900/80 mt-1 line-clamp-3">{recipe.description[langKey]}</p>
-                    <motion.button
-                        onClick={() => onSelectRecipe(recipe)}
-                        className="mt-3 w-full md:w-auto self-center md:self-start px-4 py-2 text-sm bg-purple-500 text-white font-semibold rounded-lg"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                    >
-                        {t('viewTodaysRecipe')}
-                    </motion.button>
-                </div>
-            </div>
+      {/* FIX: Moved interactive props to the motion component wrapper to resolve TS error. */}
+      <motion.div layoutId={`recipe-${recipe.id}`} className="cursor-pointer" onClick={handleSelect} whileHover={{ y: -5 }}>
+        <GlassCard className="p-4 sm:p-6 md:p-8 space-y-4">
+          <div className="flex items-center gap-3 text-2xl font-bold text-amber-300">
+            <ChefHat size={28} />
+            <h2>{t('Recipe of the Day')}</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3 flex flex-col justify-center">
+                   <h3 className="text-xl font-bold text-stone-100">{recipe.title[langKey]}</h3>
+                   <div className="flex items-center gap-4 text-sm text-stone-100/70">
+                       <span className="flex items-center gap-1.5"><Utensils size={14}/> {recipe.cuisine[langKey]}</span>
+                       <span className="flex items-center gap-1.5"><Clock size={14}/> {recipe.cookTime[langKey]}</span>
+                   </div>
+                   <p className="text-stone-100/80 text-sm line-clamp-4 flex-grow">{recipe.description[langKey]}</p>
+                   <div className="mt-auto">
+                       <div className="px-4 py-2 bg-teal-500 text-white font-semibold rounded-lg mt-2 inline-block">
+                          {t('viewRecipe')}
+                       </div>
+                   </div>
+              </div>
+               {blobImageUrl && (
+                  <div className="aspect-video rounded-lg overflow-hidden">
+                      <img src={blobImageUrl} alt={recipe.title[langKey]} className="w-full h-full object-cover"/>
+                  </div>
+              )}
+          </div>
         </GlassCard>
+      </motion.div>
     </motion.div>
   );
 };

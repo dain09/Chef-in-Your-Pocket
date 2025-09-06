@@ -10,9 +10,9 @@ interface ToastProps {
 }
 
 const icons = {
-  success: <CheckCircle className="text-green-300" />,
-  error: <XCircle className="text-red-300" />,
-  info: <Info className="text-blue-300" />,
+  success: <CheckCircle className="text-green-400" />,
+  error: <XCircle className="text-red-400" />,
+  info: <Info className="text-blue-400" />,
 };
 
 const Toast: React.FC<ToastProps> = ({ toast, onRemove }) => {
@@ -34,12 +34,12 @@ const Toast: React.FC<ToastProps> = ({ toast, onRemove }) => {
       exit={{ opacity: 0, y: 20, scale: 0.5 }}
       transition={{ type: 'spring', stiffness: 260, damping: 20 }}
     >
-      <GlassCard className="p-3 flex items-center gap-4 w-full max-w-sm">
+      <GlassCard className="p-3 flex items-center gap-4 w-full max-w-sm !bg-[#102a2a]/95">
         <div className="flex-shrink-0">{icons[toast.type]}</div>
-        <p className="flex-grow text-pink-900/90 text-sm font-medium">{toast.message}</p>
+        <p className="flex-grow text-stone-100/90 text-sm font-medium">{toast.message}</p>
         <button
           onClick={() => onRemove(toast.id)}
-          className="p-1 text-pink-900/50 hover:text-pink-900"
+          className="p-1 text-stone-100/50 hover:text-stone-100"
         >
           <X size={16} />
         </button>

@@ -1,8 +1,10 @@
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
+// FIX: Correct import path for App component.
+import App from './App.tsx';
 import './i18n'; // Initialize i18next
+import { ToastProvider } from './contexts/ToastContext';
+import ToastContainer from './components/ToastContainer';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -12,6 +14,9 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <App />
+    <ToastProvider>
+      <App />
+      <ToastContainer />
+    </ToastProvider>
   </React.StrictMode>
 );

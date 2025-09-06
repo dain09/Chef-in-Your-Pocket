@@ -1,8 +1,8 @@
-import { Archive, CalendarDays, Recycle, Search, ChefHat } from 'lucide-react';
-import type { Icon } from 'lucide-react';
+import { Archive, CalendarDays, Recycle, Search, ChefHat, Palette, Compass, GlassWater, Scaling } from 'lucide-react';
+import type { ElementType } from 'react';
 
 interface ChangelogFeature {
-  icon: Icon;
+  icon: ElementType;
   title: { en: string; ar: string };
   description: { en: string; ar: string };
 }
@@ -14,6 +14,35 @@ interface ChangelogEntry {
 }
 
 export const changelog: ChangelogEntry[] = [
+  {
+    version: '3.0.0',
+    title: {
+        en: "The Cinematic Update is Here!",
+        ar: "التحديث السينمائي وصل!"
+    },
+    features: [
+       {
+        icon: Palette,
+        title: { en: 'A Whole New Look', ar: 'تصميم جديد كلياً' },
+        description: { en: 'A redesigned, cinematic interface with a darker, warmer theme for a more immersive experience.', ar: 'واجهة سينمائية مُعاد تصميمها بمظهر داكن وألوان دافئة لتجربة غامرة أكثر.' }
+      },
+      {
+        icon: GlassWater,
+        title: { en: 'Menu Planner for Occasions', ar: 'مخطط قائمة الطعام للمناسبات' },
+        description: { en: 'Plan a complete 3-course meal for any event. Just describe the occasion and get a full menu!', ar: 'خطط لوجبة كاملة من 3 أطباق لأي مناسبة. فقط صف المناسبة واحصل على قائمة طعام متكاملة!' }
+      },
+       {
+        icon: Scaling,
+        title: { en: 'Dynamic Recipe Scaling', ar: 'تعديل كميات الوصفة' },
+        description: { en: 'Adjust servings on the fly and watch ingredient amounts update automatically and intelligently.', ar: 'عدّل عدد الحصص بسهولة وشاهد كميات المكونات تتحدث تلقائياً وبشكل ذكي.' }
+      },
+       {
+        icon: Compass,
+        title: { en: 'Discovery-First Homepage', ar: 'صفحة اكتشاف ملهمة' },
+        description: { en: 'A new homepage that inspires you with the Recipe of the Day before you even search.', ar: 'صفحة رئيسية جديدة تلهمك بوصفة اليوم قبل أن تبدأ البحث.' }
+      },
+    ]
+  },
   {
     version: '2.0.0',
     title: {

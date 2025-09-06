@@ -1,14 +1,15 @@
-import React, { memo } from 'react';
-// FIX: Changed import to pull HTMLMotionProps for better typing
-import { motion, HTMLMotionProps } from 'framer-motion';
+import React from 'react';
+import { motion, MotionProps } from 'framer-motion';
 
-// FIX: Updated GlassCardProps to use HTMLMotionProps which correctly includes animation props and standard element props.
-type GlassCardProps = HTMLMotionProps<"div">;
+type GlassCardProps = MotionProps & {
+  children: React.ReactNode;
+  className?: string;
+};
 
-const GlassCard = ({ children, className = '', ...rest }: GlassCardProps) => {
+const GlassCard: React.FC<GlassCardProps> = ({ children, className = '', ...rest }) => {
   return (
     <motion.div
-      className={`bg-white/10 backdrop-blur-lg rounded-2xl border border-white/30 shadow-lg ${className}`}
+      className={`bg-black/30 backdrop-blur-lg border border-amber-300/10 shadow-lg rounded-2xl ${className}`}
       {...rest}
     >
       {children}
@@ -16,4 +17,4 @@ const GlassCard = ({ children, className = '', ...rest }: GlassCardProps) => {
   );
 };
 
-export default memo(GlassCard);
+export default GlassCard;

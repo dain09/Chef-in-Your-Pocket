@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { ChefHat } from 'lucide-react';
 import type { LoadingMessages, MultilingualString } from '../types';
+// FIX: Correctly import the getCookingTip function from the geminiService.
 import { getCookingTip } from '../services/geminiService';
 
 interface LoadingOverlayProps {
@@ -23,7 +24,7 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ type }) => {
               return [t('remixingLeftovers')];
           case 'analyzing':
               return [t('analyzingImage')];
-          case 'planning':
+          case 'planningMenu':
               return [
                   t('planningMenu'),
                   t('preparingAppetizer'),
@@ -99,7 +100,7 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ type }) => {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="text-center text-white space-y-8">
+      <div className="text-center text-stone-100 space-y-8">
         <motion.div
           animate={{
             scale: [1, 1.1, 1],
@@ -111,7 +112,7 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ type }) => {
             ease: "easeInOut"
           }}
         >
-          <ChefHat size={64} className="mx-auto text-pink-300" />
+          <ChefHat size={64} className="mx-auto text-amber-400" />
         </motion.div>
         
         <div className="w-full max-w-md space-y-4">
@@ -119,7 +120,7 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ type }) => {
             <AnimatePresence mode="wait">
               <motion.p
                 key={messageIndex + messages[messageIndex]} 
-                className="text-white/90 text-xl font-semibold"
+                className="text-stone-100/90 text-xl font-semibold"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
@@ -134,7 +135,7 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ type }) => {
              <AnimatePresence mode="wait">
                 <motion.p
                     key={currentTip ? currentTip.en : 'loading-tip'}
-                    className="text-white/70 italic text-base"
+                    className="text-stone-100/70 italic text-base"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1, transition: { delay: 0.3 } }}
                     exit={{ opacity: 0 }}

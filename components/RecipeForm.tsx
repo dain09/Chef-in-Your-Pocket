@@ -1,400 +1,166 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { Camera, UtensilsCrossed, Wand2, CalendarClock, BookUser, Recycle } from 'lucide-react';
 import { cuisines } from '../data/cuisines';
 import { diets } from '../data/diets';
-import GlassCard from './GlassCard';
+import CustomSelect from './CustomSelect';
 import { audioService } from '../services/audioService';
-import { Sparkles, Camera, X, ChefHat, Utensils, Search, Recycle, Archive, CalendarDays } from 'lucide-react';
-import CustomSelect from './CustomSelect'; 
-import type { PantryItem } from '../types';
 
-interface ImageScanModalProps {
-  onClose: () => void;
-  onScanComplete: (base64Image: string) => void;
-  onCameraError: (error: string) => void;
-}
-
-type FormMode = 'recipe' | 'remix' | 'plan' | 'search';
-
-const ImageScanModal: React.FC<ImageScanModalProps> = ({ onClose, onScanComplete, onCameraError }) => {
-    const { t } = useTranslation();
-    const videoRef = useRef<HTMLVideoElement>(null);
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const [stream, setStream] = useState<MediaStream | null>(null);
-    const [capturedImage, setCapturedImage] = useState<string | null>(null);
-
-    useEffect(() => {
-        const startCamera = async () => {
-            try {
-                const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-                setStream(mediaStream);
-                if (videoRef.current) {
-                    videoRef.current.srcObject = mediaStream;
-                }
-            } catch (err) {
-                console.error("Camera error:", err);
-                onCameraError(t('errorCamera'));
-                onClose();
-            }
-        };
-
-        startCamera();
-
-        return () => {
-            stream?.getTracks().forEach(track => track.stop());
-        };
-    }, [onCameraError, onClose, t]);
-
-    const handleCapture = () => {
-        if (videoRef.current && canvasRef.current) {
-            audioService.playClick();
-            const video = videoRef.current;
-            const canvas = canvasRef.current;
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            canvas.getContext('2d')?.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-            const dataUrl = canvas.toDataURL('image/jpeg');
-            setCapturedImage(dataUrl);
-            stream?.getTracks().forEach(track => track.stop());
-            setStream(null);
-        }
-    };
-
-    const handleRetake = () => {
-        audioService.playClick();
-        setCapturedImage(null);
-        const startCamera = async () => {
-            try {
-                const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-                setStream(mediaStream);
-                if (videoRef.current) {
-                    videoRef.current.srcObject = mediaStream;
-                }
-            } catch (err) {
-                 onCameraError(t('errorCamera'));
-                 onClose();
-            }
-        };
-        startCamera();
-    };
-
-    const handleUsePhoto = () => {
-        if (capturedImage) {
-            audioService.playSuccess();
-            const base64Image = capturedImage.split(',')[1];
-            onScanComplete(base64Image);
-        }
-    };
-    
-    return (
-        <motion.div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        >
-            <GlassCard
-                className="w-full max-w-lg p-4 flex flex-col gap-4 relative"
-                initial={{ scale: 0.8 }} animate={{ scale: 1 }} exit={{ scale: 0.8 }}
-            >
-                <button onClick={onClose} className="absolute top-2 right-2 p-2 text-pink-900/70 hover:text-pink-900 z-10">
-                    <X size={24} />
-                </button>
-                <h3 className="text-xl font-bold text-pink-900 text-center">{t('scanModalTitle')}</h3>
-                <div className="aspect-video w-full bg-black rounded-lg overflow-hidden relative">
-                    {capturedImage ? (
-                        <img src={capturedImage} alt="Captured ingredients" className="w-full h-full object-contain" />
-                    ) : (
-                        <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover"></video>
-                    )}
-                    <canvas ref={canvasRef} className="hidden"></canvas>
-                </div>
-                 <div className="flex justify-center gap-4">
-                    {capturedImage ? (
-                        <>
-                            <motion.button onClick={handleRetake} className="px-4 py-2 bg-black/10 text-pink-900 font-semibold rounded-lg" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>{t('retake')}</motion.button>
-                            <motion.button onClick={handleUsePhoto} className="px-4 py-2 bg-purple-500 text-white font-semibold rounded-lg" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>{t('usePhoto')}</motion.button>
-                        </>
-                    ) : (
-                        <motion.button onClick={handleCapture} className="px-6 py-3 bg-pink-500 text-white font-bold rounded-full" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>{t('capture')}</motion.button>
-                    )}
-                 </div>
-            </GlassCard>
-        </motion.div>
-    );
-};
-
-const ModeButton: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode; }> = ({ active, onClick, children }) => (
-    <button
-        onClick={() => { audioService.playPop(); onClick(); }}
-        className={`relative px-3 py-3 text-sm font-semibold rounded-xl transition-colors w-full ${active ? 'text-pink-800' : 'text-pink-900/60 hover:text-pink-900'}`}
-    >
-        {active && <motion.div layoutId="formModePill" className="absolute inset-0 bg-white/50 rounded-xl" />}
-        <span className="relative z-10 flex items-center justify-center gap-2">{children}</span>
-    </button>
-);
-
+type FormMode = 'ingredients' | 'name' | 'leftovers' | 'occasion' | 'weekly';
 
 interface RecipeFormProps {
-  onRecipeSubmit: (ingredients: string, cuisine: string, allergies: string, diet: string) => void;
-  onPlanSubmit: (prompt: string) => void;
-  onRecipeSearch: (recipeName: string) => void;
-  onLeftoverRemix: (ingredients: string) => void;
-  isLoading: boolean;
-  onAnalyzeImage: (base64: string) => Promise<string>;
-  setError: (error: string | null) => void;
-  pantryItems: PantryItem[];
+  onGenerate: (ingredients: string, cuisine: string, diet: string, name?: string) => void;
+  onAnalyzeImage: () => void;
+  onPlanMenu: (occasion: string) => void;
+  onPlanWeek: (goals: string) => void;
+  onLeftoverRemix: (leftovers: string) => void;
+  isGenerating: boolean;
 }
 
-const RecipeForm: React.FC<RecipeFormProps> = ({ onRecipeSubmit, onPlanSubmit, onRecipeSearch, onLeftoverRemix, isLoading, onAnalyzeImage, setError, pantryItems }) => {
-  const { t, i18n } = useTranslation();
-  const [mode, setMode] = useState<FormMode>('recipe');
-  const [mainInput, setMainInput] = useState(''); // Used for ingredients, occasion, and recipe name search
-  const [cuisineValue, setCuisineValue] = useState('random');
-  const [allergies, setAlleries] = useState('');
+const RecipeForm: React.FC<RecipeFormProps> = ({ 
+    onGenerate, 
+    onAnalyzeImage, 
+    onPlanMenu, 
+    onPlanWeek, 
+    onLeftoverRemix, 
+    isGenerating 
+}) => {
+  const { i18n, t } = useTranslation();
+  const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
+  
+  const [mode, setMode] = useState<FormMode>('ingredients');
+  const [prompt, setPrompt] = useState('');
+  const [cuisine, setCuisine] = useState('random');
   const [diet, setDiet] = useState('none');
-  const [isScanModalOpen, setScanModalOpen] = useState(false);
 
+  const inputRef = useRef<HTMLInputElement>(null);
+  
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    audioService.playClick();
-    if (mainInput.trim()) {
-      if (mode === 'recipe') {
-        const selectedCuisine = cuisines.find(c => c.value === cuisineValue);
-        const cuisineForPrompt = selectedCuisine ? selectedCuisine.en : cuisineValue;
-        onRecipeSubmit(mainInput, cuisineForPrompt, allergies, diet);
-      } else if (mode === 'plan') {
-        onPlanSubmit(mainInput);
-      } else if (mode === 'search') {
-        onRecipeSearch(mainInput);
-      } else { // mode === 'remix'
-        onLeftoverRemix(mainInput);
+    audioService.playSwoosh();
+    switch (mode) {
+      case 'ingredients':
+        onGenerate(prompt, cuisine, diet);
+        break;
+      case 'name':
+        onGenerate('', 'random', 'none', prompt);
+        break;
+      case 'leftovers':
+        onLeftoverRemix(prompt);
+        break;
+      case 'occasion':
+        onPlanMenu(prompt);
+        break;
+      case 'weekly':
+        onPlanWeek(prompt);
+        break;
+    }
+  };
+
+  const getPlaceholderText = () => {
+      switch(mode) {
+          case 'ingredients': return t('form.placeholderIngredients');
+          case 'name': return t('form.placeholderName');
+          case 'leftovers': return t('form.placeholderLeftovers');
+          case 'occasion': return t('form.placeholderOccasion');
+          case 'weekly': return t('form.placeholderWeekly');
+          default: return '';
       }
-    }
-  };
-
-  const handleSurprise = () => {
-    audioService.playPop();
-    const actualCuisines = cuisines.filter(c => c.value !== 'random');
-    const randomCuisine = actualCuisines[Math.floor(Math.random() * actualCuisines.length)];
-    setCuisineValue(randomCuisine.value);
-    const cuisineForPrompt = randomCuisine.en;
-    onRecipeSubmit(mainInput || 'common household staples', cuisineForPrompt, allergies, diet);
-  };
-  
-  const handleScanComplete = async (base64Image: string) => {
-    setScanModalOpen(false);
-    const identifiedIngredients = await onAnalyzeImage(base64Image);
-    if (identifiedIngredients) {
-        setMainInput(prev => prev ? `${prev}, ${identifiedIngredients}` : identifiedIngredients);
-    }
-  };
-
-  const handleUsePantry = () => {
-    audioService.playClick();
-    const pantryIngredients = pantryItems.map(item => item.name).join(', ');
-    setMainInput(pantryIngredients);
-  };
-
-  const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
-
-  const cuisineOptions = useMemo(() => {
-    const sorted = [...cuisines].sort((a, b) => {
-        if (a.value === 'random') return -1;
-        if (b.value === 'random') return 1;
-        return a[langKey].localeCompare(b[langKey], langKey === 'ar' ? 'ar-EG' : 'en-US');
-    });
-    return sorted.map(c => ({ value: c.value, label: c[langKey] }));
-  }, [langKey]);
-  
-  const dietOptions = useMemo(() => {
-    const sorted = [...diets].sort((a, b) => a[langKey].localeCompare(b[langKey], langKey === 'ar' ? 'ar-EG' : 'en-US'));
-    return sorted.map(d => ({ value: d.value, label: d[langKey] }));
-  }, [langKey]);
-
-  const getLabel = () => {
-    switch (mode) {
-        case 'recipe': return t('availableIngredients');
-        case 'plan': return t('weeklyPlanDescription');
-        case 'search': return t('searchByName');
-        case 'remix': return t('leftoverIngredients');
-        default: return '';
-    }
-  };
-
-  const getPlaceholder = () => {
-    switch (mode) {
-        case 'recipe': return t('ingredientsPlaceholder');
-        case 'plan': return t('weeklyPlanPlaceholder');
-        case 'search': return t('recipeNamePlaceholder');
-        case 'remix': return t('leftoverPlaceholder');
-        default: return '';
-    }
-  };
+  }
 
   const getButtonText = () => {
-    switch (mode) {
-        case 'recipe': return t('getRecipe');
-        case 'plan': return t('getWeeklyPlan');
-        case 'search': return t('searchForRecipe');
-        case 'remix': return t('getRemix');
-        default: return '';
+    switch(mode) {
+        case 'ingredients': return t('form.generateButton');
+        case 'name': return t('form.findButton');
+        case 'leftovers': return t('form.remixButton');
+        case 'occasion': return t('form.planMenuButton');
+        case 'weekly': return t('form.planWeekButton');
+        default: return t('form.generateButton');
     }
-  };
+  }
+
+  const handleModeChange = (newMode: FormMode) => {
+      audioService.playClick();
+      setMode(newMode);
+      setPrompt('');
+      inputRef.current?.focus();
+  }
+
+  const cuisineOptions = cuisines.map(c => ({ value: c.value, label: c[langKey] }));
+  const dietOptions = diets.map(d => ({ value: d.value, label: d[langKey] }));
 
   return (
-    <>
-      <AnimatePresence>
-        {isScanModalOpen && (
-            <ImageScanModal 
-                onClose={() => setScanModalOpen(false)}
-                onScanComplete={handleScanComplete}
-                onCameraError={(err) => setError(err)}
+    <div className="w-full max-w-2xl mx-auto space-y-4">
+        <div className="flex justify-center flex-wrap gap-2 text-sm">
+            <ModeButton icon={UtensilsCrossed} label={t('form.modeIngredients')} isActive={mode === 'ingredients'} onClick={() => handleModeChange('ingredients')} />
+            <ModeButton icon={BookUser} label={t('form.modeName')} isActive={mode === 'name'} onClick={() => handleModeChange('name')} />
+            <ModeButton icon={Recycle} label={t('form.modeLeftovers')} isActive={mode === 'leftovers'} onClick={() => handleModeChange('leftovers')} />
+            <ModeButton icon={Wand2} label={t('form.modeOccasion')} isActive={mode === 'occasion'} onClick={() => handleModeChange('occasion')} />
+            <ModeButton icon={CalendarClock} label={t('form.modeWeekly')} isActive={mode === 'weekly'} onClick={() => handleModeChange('weekly')} />
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-3">
+            <input
+                ref={inputRef}
+                type="text"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder={getPlaceholderText()}
+                className="w-full p-3 bg-black/30 border border-amber-400/30 rounded-lg text-stone-100 placeholder-stone-100/50 focus:ring-2 focus:ring-amber-500 focus:outline-none transition-shadow"
+                required
             />
-        )}
-      </AnimatePresence>
-      <GlassCard className="relative z-20 w-full max-w-2xl mx-auto p-4 sm:p-6 md:p-8">
-        <motion.form
-          onSubmit={handleSubmit}
-          className="flex flex-col space-y-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.7, delay: 0.2, ease: 'easeOut' }}
-        >
-          <div className="text-center">
-            <h2 className="text-2xl sm:text-3xl font-bold text-pink-900">{t('findYourRecipe')}</h2>
-            <p className="text-pink-900/70 mt-2">{t('tagline')}</p>
-          </div>
-          
-          <GlassCard className="p-2 grid grid-cols-2 sm:grid-cols-4 items-center gap-2 rounded-2xl mx-auto">
-            <ModeButton active={mode === 'recipe'} onClick={() => setMode('recipe')}><ChefHat size={18}/> {t('singleRecipe')}</ModeButton>
-            <ModeButton active={mode === 'remix'} onClick={() => setMode('remix')}><Recycle size={18}/> {t('leftoverRemix')}</ModeButton>
-            <ModeButton active={mode === 'plan'} onClick={() => setMode('plan')}><CalendarDays size={18}/> {t('weeklyPlan')}</ModeButton>
-            <ModeButton active={mode === 'search'} onClick={() => setMode('search')}><Search size={18}/> {t('searchByName')}</ModeButton>
-          </GlassCard>
-          
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={mode}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-6"
+            <motion.button 
+                type="button" 
+                onClick={() => { audioService.playClick(); onAnalyzeImage(); }}
+                className="p-3 bg-black/30 border border-amber-400/30 rounded-lg text-amber-300"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                aria-label={t('form.analyzeImage')}
             >
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <label htmlFor="main-input" className="block text-sm font-medium text-pink-900/90">
-                    {getLabel()}
-                  </label>
-                  <div className="flex items-center gap-4">
-                     <div className="flex items-center gap-2 flex-wrap justify-end">
-                        {mode === 'recipe' && (
-                          <motion.button 
-                            type="button" 
-                            onClick={() => { audioService.playPop(); setScanModalOpen(true); }}
-                            className="flex items-center gap-1.5 text-xs sm:text-sm text-purple-600 font-semibold"
-                            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                          >
-                            <Camera size={16} /> {t('scanIngredients')}
-                          </motion.button>
-                        )}
-                        {mode === 'recipe' && pantryItems.length > 0 && (
-                           <motion.button 
-                            type="button" 
-                            onClick={handleUsePantry}
-                            className="flex items-center gap-1.5 text-xs sm:text-sm text-purple-600 font-semibold"
-                            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                          >
-                            <Archive size={16} /> {t('usePantryIngredients')}
-                          </motion.button>
-                        )}
-                     </div>
-                     {mode === 'recipe' && (
-                        <motion.button
-                            type="button"
-                            onClick={handleSurprise}
-                            disabled={isLoading}
-                            className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-gradient-to-r from-purple-400 to-pink-500 rounded-full text-white shadow-lg disabled:opacity-50"
-                            whileHover={{ scale: isLoading ? 1 : 1.1, rotate: isLoading ? 0 : 15 }}
-                            whileTap={{ scale: isLoading ? 1 : 0.9 }}
-                            aria-label={t('surpriseMe')}
-                            title={t('surpriseMe')}
-                        >
-                            <Sparkles size={20} />
-                        </motion.button>
-                    )}
-                  </div>
-                </div>
-                <motion.textarea
-                  id="main-input"
-                  value={mainInput}
-                  onChange={(e) => setMainInput(e.target.value)}
-                  rows={mode === 'recipe' || mode === 'remix' ? 4 : 2}
-                  className="w-full p-3 bg-white/30 border border-pink-500/30 rounded-lg text-pink-900 placeholder-pink-900/50 focus:ring-2 focus:ring-pink-400 focus:outline-none transition-shadow resize-none"
-                  placeholder={getPlaceholder()}
-                  whileFocus={{ scale: 1.02, boxShadow: '0 0 10px rgba(255, 255, 255, 0.1)' }}
-                />
-              </div>
+                <Camera size={24} />
+            </motion.button>
+            </div>
 
-              {mode === 'recipe' && (
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block mb-2 text-sm font-medium text-pink-900/90">
-                        {t('allergies')} <span className="text-pink-900/50 text-xs">({t('optional')})</span>
-                      </label>
-                      <motion.input
-                        id="allergies"
-                        type="text"
-                        value={allergies}
-                        onChange={(e) => setAlleries(e.target.value)}
-                        className="w-full p-3 bg-white/30 border border-pink-500/30 rounded-lg text-pink-900 placeholder-pink-900/50 focus:ring-2 focus:ring-pink-400 focus:outline-none transition-shadow"
-                        placeholder={t('allergiesPlaceholder')}
-                        whileFocus={{ scale: 1.02, boxShadow: '0 0 10px rgba(255, 255, 255, 0.1)' }}
-                      />
-                    </div>
-                     <div>
-                      <label className="block mb-2 text-sm font-medium text-pink-900/90">
-                        {t('diet')} <span className="text-pink-900/50 text-xs">({t('optional')})</span>
-                      </label>
-                      <CustomSelect 
-                        options={dietOptions}
-                        selectedValue={diet}
-                        onValueChange={setDiet}
-                      />
-                    </div>
-                  </div>
-              )}
+            {mode === 'ingredients' && (
+                <motion.div 
+                    className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                >
+                    <CustomSelect options={cuisineOptions} selectedValue={cuisine} onValueChange={setCuisine} />
+                    <CustomSelect options={dietOptions} selectedValue={diet} onValueChange={setDiet} />
+                </motion.div>
+            )}
 
-              {mode === 'recipe' && (
-                 <div>
-                    <label className="block mb-2 text-sm font-medium text-pink-900/90">
-                      {t('chooseCuisine')}
-                    </label>
-                     <CustomSelect 
-                        options={cuisineOptions}
-                        selectedValue={cuisineValue}
-                        onValueChange={setCuisineValue}
-                      />
-                  </div>
-              )}
-            </motion.div>
-          </AnimatePresence>
-          
-          <div className="flex flex-col gap-4">
-              <motion.button
+            <motion.button
                 type="submit"
-                disabled={isLoading || !mainInput.trim()}
-                className="w-full py-3 text-lg font-bold text-white bg-gradient-to-r from-pink-500 to-orange-400 rounded-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform"
-                whileHover={{ scale: isLoading ? 1 : 1.05, y: isLoading ? 0 : -2, boxShadow: '0 0 20px rgba(251, 146, 60, 0.7)' }}
-                whileTap={{ scale: isLoading ? 1 : 0.98 }}
-              >
-                {isLoading ? t('generating') : getButtonText()}
-              </motion.button>
-          </div>
-        </motion.form>
-      </GlassCard>
-    </>
+                disabled={isGenerating || !prompt}
+                className="w-full py-3 text-lg font-bold text-gray-900 bg-gradient-to-r from-amber-400 to-orange-500 rounded-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+            >
+            {isGenerating ? t('form.generating') : getButtonText()}
+            </motion.button>
+        </form>
+    </div>
   );
 };
+
+const ModeButton = ({ icon: Icon, label, isActive, onClick }: { icon: React.ElementType, label: string, isActive: boolean, onClick: () => void }) => (
+    <motion.button
+        type="button"
+        onClick={onClick}
+        className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-stone-100/80 transition-colors ${
+            isActive ? 'bg-black/40' : 'bg-black/20 hover:bg-black/30'
+        }`}
+        whileHover={{ y: -2 }}
+        whileTap={{ scale: 0.95 }}
+    >
+        <Icon size={16} className={`${isActive ? 'text-amber-300' : ''}`} />
+        <span>{label}</span>
+    </motion.button>
+);
+
 
 export default RecipeForm;

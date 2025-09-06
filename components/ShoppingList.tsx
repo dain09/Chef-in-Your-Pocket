@@ -59,7 +59,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({ items, onClear, onUpdateIte
   return (
     <>
       <motion.button
-        className={`${positionClasses} w-16 h-16 rounded-full bg-gradient-to-br from-pink-500 to-orange-400 text-white flex items-center justify-center shadow-lg shadow-black/30`}
+        className={`${positionClasses} w-16 h-16 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 text-white flex items-center justify-center shadow-lg shadow-black/30`}
         onClick={() => { audioService.playPop(); setIsOpen(!isOpen); }}
         whileHover={{ scale: 1.1, rotate: -10 }}
         whileTap={{ scale: 0.9 }}
@@ -76,7 +76,7 @@ const ShoppingList: React.FC<ShoppingListProps> = ({ items, onClear, onUpdateIte
                 </motion.div>
             )}
         </AnimatePresence>
-        <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center border-2 border-pink-200">
+        <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center border-2 border-gray-800">
             {items.length}
         </span>
       </motion.button>
@@ -90,9 +90,9 @@ const ShoppingList: React.FC<ShoppingListProps> = ({ items, onClear, onUpdateIte
             transition={{ type: 'spring', damping: 20, stiffness: 200 }}
             className={modalPositionClasses}
           >
-            <GlassCard className="p-4 w-[85vw] sm:w-80 max-h-96 flex flex-col">
-              <div className="flex justify-between items-center mb-2 pb-2 border-b border-pink-500/30">
-                 <h3 className="text-lg font-bold text-pink-900">{t('shoppingList')}</h3>
+            <GlassCard className="p-4 w-[85vw] sm:w-80 max-h-96 flex flex-col !bg-[#102a2a]/95">
+              <div className="flex justify-between items-center mb-2 pb-2 border-b border-amber-400/30">
+                 <h3 className="text-lg font-bold text-amber-300">{t('shoppingList')}</h3>
                  <button onClick={handleClearAll} className="text-red-500 hover:text-red-400 p-1" aria-label={t('clearAll')}>
                     <Trash2 size={18} />
                  </button>
@@ -106,9 +106,9 @@ const ShoppingList: React.FC<ShoppingListProps> = ({ items, onClear, onUpdateIte
                       id={`item-${index}`}
                       checked={checkedItems.includes(item)}
                       onChange={() => handleToggleChecked(item)}
-                      className="w-5 h-5 bg-white/20 border-pink-500/40 rounded text-pink-500 focus:ring-pink-500/50 focus:ring-2"
+                      className="w-5 h-5 bg-black/20 border-amber-400/40 rounded text-amber-400 focus:ring-amber-500/50 focus:ring-2"
                     />
-                    <label htmlFor={`item-${index}`} className={`flex-grow text-pink-900/90 transition-colors ${checkedItems.includes(item) ? 'line-through text-pink-900/50' : ''}`}>
+                    <label htmlFor={`item-${index}`} className={`flex-grow text-stone-100/90 transition-colors ${checkedItems.includes(item) ? 'line-through text-stone-100/50' : ''}`}>
                         {item}
                     </label>
                   </li>

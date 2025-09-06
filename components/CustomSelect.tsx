@@ -62,7 +62,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({ options, selectedValue, onV
     <div className="relative" ref={selectRef}>
       <motion.button
         type="button"
-        className="w-full p-3 text-left bg-white/30 border border-pink-500/30 rounded-lg text-pink-900 focus:ring-2 focus:ring-pink-400 focus:outline-none transition-shadow flex justify-between items-center"
+        className="w-full p-3 text-left bg-black/30 border border-amber-400/30 rounded-lg text-stone-100 placeholder-stone-100/50 focus:ring-2 focus:ring-amber-500 focus:outline-none transition-shadow flex justify-between items-center"
         onClick={() => {
             setIsOpen(!isOpen);
             audioService.playPop();
@@ -83,7 +83,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({ options, selectedValue, onV
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: direction === 'down' ? -10 : 10 }}
           >
-            <GlassCard className="p-2 max-h-60 overflow-y-auto custom-scrollbar !bg-pink-100/80 backdrop-blur-xl">
+            <GlassCard className="p-2 max-h-60 overflow-y-auto custom-scrollbar !bg-[#102a2a]/95 backdrop-blur-xl">
               <ul className="space-y-1">
                 {options.map(option => (
                   <li key={option.value}>
@@ -91,8 +91,8 @@ const CustomSelect: React.FC<CustomSelectProps> = ({ options, selectedValue, onV
                       type="button"
                       className={`w-full text-left p-2 rounded-md transition-colors flex items-center justify-between ${
                         selectedValue === option.value
-                          ? 'bg-white/30 text-pink-800 font-semibold'
-                          : 'text-pink-900/80 hover:bg-white/20'
+                          ? 'bg-black/30 text-amber-300 font-semibold'
+                          : 'text-stone-100/80 hover:bg-black/20'
                       }`}
                       onClick={() => handleSelect(option.value)}
                     >

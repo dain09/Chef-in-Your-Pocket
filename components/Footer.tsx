@@ -9,19 +9,19 @@ const Footer: React.FC = () => {
 
     return (
         <motion.footer 
-            className="w-full max-w-7xl mx-auto mt-auto py-6 text-center text-pink-900/70"
+            className="w-full max-w-7xl mx-auto mt-auto py-6 text-center text-stone-100/70"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.7, delay: 3.0 }}
         >
-            <p className="mb-4 text-base font-semibold text-pink-900/80">
+            <p className="mb-4 text-base font-semibold text-stone-100/80">
               {t('banner.solidarityMessage')}
             </p>
             <div className="flex justify-center items-center gap-6 mb-2">
                 <motion.a 
                     href="https://github.com/dain09" 
                     target="_blank" rel="noopener noreferrer"
-                    whileHover={{ scale: 1.1, color: '#ec4899' }}
+                    whileHover={{ scale: 1.1, color: '#e5b84c' }}
                     aria-label="GitHub Profile"
                 >
                     <Github size={24} />
@@ -29,7 +29,7 @@ const Footer: React.FC = () => {
                 <motion.a 
                     href="https://t.me/D_ai_n" 
                     target="_blank" rel="noopener noreferrer"
-                    whileHover={{ scale: 1.1, color: '#ec4899' }}
+                    whileHover={{ scale: 1.1, color: '#e5b84c' }}
                     aria-label="Telegram Profile"
                 >
                     <Send size={24} />

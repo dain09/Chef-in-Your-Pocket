@@ -18,7 +18,7 @@ const LanguageSwitcher: React.FC = () => {
   return (
     <motion.button
       onClick={toggleLanguage}
-      className="flex items-center gap-2 px-3 py-2 bg-pink-500/20 border border-pink-500/30 rounded-lg text-pink-900 font-semibold hover:bg-pink-500/30 transition-colors"
+      className="flex items-center gap-2 px-3 py-2 bg-black/20 border border-amber-300/10 rounded-lg text-stone-100/80 font-semibold hover:bg-black/40 transition-colors"
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
       aria-label={`Switch to ${i18n.language === 'ar' ? 'English' : 'Arabic'}`}

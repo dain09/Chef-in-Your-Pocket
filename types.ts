@@ -1,9 +1,7 @@
-export type LoadingMessages = 'generating' | 'remixing' | 'analyzing' | 'planning' | 'remixingLeftovers' | 'planningWeek';
-
-export type MultilingualString = {
+export interface MultilingualString {
   en: string;
   ar: string;
-};
+}
 
 export interface Cuisine {
   value: string;
@@ -12,74 +10,76 @@ export interface Cuisine {
 }
 
 export interface Ingredient {
+  name: MultilingualString;
   amount: MultilingualString;
-  name: MultilingualString;
 }
 
-export interface Substitute {
-  name: MultilingualString;
-  description: MultilingualString;
-}
-
-export interface ChatMessage {
-  role: 'user' | 'model';
-  text: string;
-}
-
-export interface Pairing {
-  name: MultilingualString;
-  description: MultilingualString;
+export interface RecipeStep {
+  text: MultilingualString;
 }
 
 export interface Recipe {
   id: string;
-  recipeName: MultilingualString;
+  title: MultilingualString;
   description: MultilingualString;
-  prepTime: MultilingualString;
+  cuisine: MultilingualString;
+  diet: MultilingualString;
   cookTime: MultilingualString;
   servings: number;
-  difficulty: string;
-  category: 'Healthy' | 'Dessert' | 'Seafood' | 'Meat' | 'Vegetarian' | 'Pasta' | 'General';
   ingredients: Ingredient[];
-  steps: MultilingualString[];
-  nutrition: {
-    calories: MultilingualString;
-    protein: MultilingualString;
-    carbs: MultilingualString;
-    fat: MultilingualString;
-  };
-  funStuff: {
-    proTips: MultilingualString[];
-    jokes: MultilingualString[];
-    historyFact: MultilingualString;
-  };
-  imageUrl?: string;
-  pairings?: Pairing[];
-}
-
-export interface Menu {
-  occasion: MultilingualString;
-  appetizer: Recipe;
-  mainCourse: Recipe;
-  dessert: Recipe;
-  imageUrl?: string;
+  steps: RecipeStep[];
+  imageUrl: string; // base64 string
+  youtubeUrl?: string;
 }
 
 export interface PantryItem {
-  id: string;
-  name: string;
+    id: string;
+    name: string;
+    date: string;
+    expiryDate?: string;
 }
 
-export interface PlannedMeal {
-    day: MultilingualString;
-    recipe: Recipe;
+export interface Menu {
+    id: string;
+    occasion: string;
+    appetizer: Recipe;
+    mainCourse: Recipe;
+    dessert: Recipe;
 }
 
 export interface MealPlan {
-    title: MultilingualString;
-    plan: PlannedMeal[];
+    id: string;
+    goals: string;
+    days: {
+        day: MultilingualString;
+        recipe: Recipe;
+    }[];
 }
 
-export interface RecipeNotes {
-  [recipeId: string]: string;
+export interface FestivalTheme {
+  title: MultilingualString;
+  description: MultilingualString;
+  recipeIdeas: {
+    title: MultilingualString;
+    description: MultilingualString;
+  }[];
 }
+
+export interface AcademyLesson {
+  id: string;
+  title: MultilingualString;
+  category: MultilingualString;
+  duration: MultilingualString;
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  content: MultilingualString;
+}
+
+export interface FlavorProfileData {
+    sweet: number;
+    sour: number;
+    bitter: number;
+    salty: number;
+    umami: number;
+}
+
+export type LoadingMessages = 'generating' | 'remixing' | 'remixingLeftovers' | 'analyzing' | 'planningMenu' | 'planningWeek';
