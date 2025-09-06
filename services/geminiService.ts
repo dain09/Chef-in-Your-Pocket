@@ -5,6 +5,8 @@ import type {
   Menu,
   MealPlan,
   FestivalTheme,
+  Ingredient,
+  AcademyLesson,
 } from "../types";
 
 // FIX: Initialize the GoogleGenAI client with a named apiKey parameter as per the guidelines.
@@ -88,29 +90,12 @@ const parseJsonResponse = <T,>(jsonString: string): T | null => {
 };
 
 const generateImageForRecipe = async (recipeTitle: string, cuisine: string): Promise<string> => {
-  try {
-    const prompt = `A cinematic, realistic, delicious-looking photo of ${recipeTitle}, a classic ${cuisine} dish. The food should be presented beautifully on a plate, with a shallow depth of field, on a rustic wooden table. The lighting should be warm and inviting.`;
-    
-    // FIX: Use the 'imagen-4.0-generate-001' model for image generation as per guidelines.
-    const response = await ai.models.generateImages({
-        model: 'imagen-4.0-generate-001',
-        prompt: prompt,
-        config: {
-          numberOfImages: 1,
-          outputMimeType: 'image/jpeg',
-          aspectRatio: '16:9',
-        },
-    });
-
-    if (response.generatedImages && response.generatedImages.length > 0) {
-      const base64ImageBytes = response.generatedImages[0].image.imageBytes;
-      return `data:image/jpeg;base64,${base64ImageBytes}`;
-    }
-    return "IMAGE_GENERATION_FAILED";
-  } catch (error) {
-    console.error("Error generating image:", error);
-    return "IMAGE_GENERATION_FAILED";
-  }
+  // NOTE: Image generation has been temporarily disabled.
+  // The Imagen API being used requires a billed Google Cloud account, which was causing
+  // an API error and preventing recipe generation for users on the free tier.
+  // The application will now fall back to a placeholder UI, ensuring core functionality remains intact.
+  console.log(`Image generation for "${recipeTitle}" skipped to avoid API errors.`);
+  return "IMAGE_GENERATION_FAILED";
 };
 
 
@@ -281,23 +266,122 @@ export const generateMenuForOccasion = async (occasion: string): Promise<Menu | 
         const menuData = parseJsonResponse<Omit<Menu, 'id'>>(response.text);
 
         if (menuData) {
-            const [appetizerImg, mainCourseImg, dessertImg] = await Promise.all([
-                generateImageForRecipe(menuData.appetizer.title.en, menuData.appetizer.cuisine.en),
-                generateImageForRecipe(menuData.mainCourse.title.en, menuData.mainCourse.cuisine.en),
-                generateImageForRecipe(menuData.dessert.title.en, menuData.dessert.cuisine.en)
-            ]);
-            
+            // Images are disabled, so we pass the failure flag directly.
+            const img_failed = "IMAGE_GENERATION_FAILED";
             return {
                 ...menuData,
                 id: new Date().toISOString(),
-                appetizer: { ...menuData.appetizer, id: `app-${Date.now()}`, imageUrl: appetizerImg },
-                mainCourse: { ...menuData.mainCourse, id: `main-${Date.now()}`, imageUrl: mainCourseImg },
-                dessert: { ...menuData.dessert, id: `des-${Date.now()}`, imageUrl: dessertImg },
+                appetizer: { ...menuData.appetizer, id: `app-${Date.now()}`, imageUrl: img_failed },
+                mainCourse: { ...menuData.mainCourse, id: `main-${Date.now()}`, imageUrl: img_failed },
+                dessert: { ...menuData.dessert, id: `des-${Date.now()}`, imageUrl: img_failed },
             };
         }
         return null;
     } catch (error) {
         console.error("Error generating menu:", error);
+        return null;
+    }
+};
+
+export const generateSubstitutions = async (ingredients: Ingredient[]): Promise<MultilingualString | null> => {
+    const ingredientList = ingredients.map(i => i.name.en).join(', ');
+    const prompt = `For a recipe including these ingredients: ${ingredientList}. Suggest some common, simple substitutions for a few of the key ingredients. Provide the answer as a simple, single paragraph. Provide the response in both English ('en') and Arabic ('ar'). Response must be JSON.`;
+    
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        en: { type: Type.STRING },
+                        ar: { type: Type.STRING },
+                    },
+                    required: ['en', 'ar'],
+                }
+            },
+        });
+        return parseJsonResponse<MultilingualString>(response.text);
+    } catch (error) {
+        console.error("Error generating substitutions:", error);
+        return null;
+    }
+};
+
+export const getExtraRecipeInfo = async (recipeTitle: string, infoType: 'nutrition' | 'trivia' | 'drinks'): Promise<MultilingualString | null> => {
+    let promptAction = '';
+    if (infoType === 'nutrition') {
+        promptAction = 'provide estimated nutritional information (calories, protein, carbs, fat) per serving. Keep it brief.';
+    } else if (infoType === 'trivia') {
+        promptAction = 'provide a fun fact or interesting piece of trivia about the dish or its main ingredients.';
+    } else if (infoType === 'drinks') {
+        promptAction = 'suggest a few complementary beverages (both alcoholic and non-alcoholic) that would pair well with it.';
+    }
+
+    const prompt = `For the recipe "${recipeTitle}", ${promptAction} Format the response as a single paragraph. Provide the response in both English ('en') and Arabic ('ar'). Response must be JSON.`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        en: { type: Type.STRING },
+                        ar: { type: Type.STRING },
+                    },
+                    required: ['en', 'ar'],
+                }
+            },
+        });
+        return parseJsonResponse<MultilingualString>(response.text);
+    } catch (error) {
+        console.error(`Error generating extra info (${infoType}):`, error);
+        return null;
+    }
+};
+
+export const generateAcademyLesson = async (category: string): Promise<AcademyLesson | null> => {
+    const prompt = `You are a patient and encouraging cooking instructor. Create a single, simple, beginner-friendly lesson for the topic: "${category}". 
+    The lesson should be easy to follow for someone who has never cooked before. 
+    The difficulty should be 'Beginner'. The duration should be a simple string like '5-10 minutes'.
+    Provide all text in both English ('en') and Arabic ('ar'). Your response MUST be in JSON format and adhere to the provided schema.`;
+
+    const lessonSchema = {
+        type: Type.OBJECT,
+        properties: {
+            title: { type: Type.OBJECT, properties: { en: { type: Type.STRING }, ar: { type: Type.STRING } }, required: ['en', 'ar'] },
+            category: { type: Type.OBJECT, properties: { en: { type: Type.STRING }, ar: { type: Type.STRING } }, required: ['en', 'ar'] },
+            duration: { type: Type.OBJECT, properties: { en: { type: Type.STRING }, ar: { type: Type.STRING } }, required: ['en', 'ar'] },
+            difficulty: { type: Type.STRING, enum: ['Beginner', 'Intermediate', 'Advanced'] },
+            content: { type: Type.OBJECT, properties: { en: { type: Type.STRING }, ar: { type: Type.STRING } }, required: ['en', 'ar'] },
+        },
+        required: ['title', 'category', 'duration', 'difficulty', 'content'],
+    };
+
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: lessonSchema,
+            },
+        });
+        const lessonData = parseJsonResponse<Omit<AcademyLesson, 'id'>>(response.text);
+        if (lessonData) {
+            return {
+                ...lessonData,
+                id: new Date().toISOString(),
+            };
+        }
+        return null;
+    } catch (error) {
+        console.error("Error generating academy lesson:", error);
         return null;
     }
 };

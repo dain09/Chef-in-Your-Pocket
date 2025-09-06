@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Home, Heart, BookOpen } from 'lucide-react';
 
 // This is a placeholder component for a feature that is not yet fully implemented.
+// It can be safely deleted if this feature is not planned for the near future.
 const BottomNav: React.FC = () => {
     const { t } = useTranslation();
     

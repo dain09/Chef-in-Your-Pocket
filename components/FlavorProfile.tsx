@@ -9,6 +9,7 @@ interface FlavorProfileProps {
 }
 
 // This is a placeholder component for a feature that is not yet fully implemented.
+// It can be safely deleted if this feature is not planned for the near future.
 const FlavorProfile: React.FC<FlavorProfileProps> = ({ data }) => {
   const { t } = useTranslation();
 

@@ -1,7 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { Camera, UtensilsCrossed, Wand2, CalendarClock, BookUser, Recycle } from 'lucide-react';
+import { Camera, UtensilsCrossed, Wand2, CalendarClock, BookUser, Recycle, Dices } from 'lucide-react';
 import { cuisines } from '../data/cuisines';
 import { diets } from '../data/diets';
 import CustomSelect from './CustomSelect';
@@ -58,6 +58,11 @@ const RecipeForm: React.FC<RecipeFormProps> = ({
     }
   };
 
+  const handleRandomClick = () => {
+    audioService.playSwoosh();
+    onGenerate(t('form.randomPrompt'), 'random', 'none');
+  };
+
   const getPlaceholderText = () => {
       switch(mode) {
           case 'ingredients': return t('form.placeholderIngredients');
@@ -87,8 +92,23 @@ const RecipeForm: React.FC<RecipeFormProps> = ({
       inputRef.current?.focus();
   }
 
-  const cuisineOptions = cuisines.map(c => ({ value: c.value, label: c[langKey] }));
-  const dietOptions = diets.map(d => ({ value: d.value, label: d[langKey] }));
+  const sortedCuisineOptions = useMemo(() => {
+    const sorted = [...cuisines].sort((a, b) => {
+      if (a.value === 'random') return -1;
+      if (b.value === 'random') return 1;
+      return a[langKey].localeCompare(b[langKey]);
+    });
+    return sorted.map(c => ({ value: c.value, label: c[langKey] }));
+  }, [langKey]);
+
+  const sortedDietOptions = useMemo(() => {
+    const sorted = [...diets].sort((a, b) => {
+        if (a.value === 'none') return -1;
+        if (b.value === 'none') return 1;
+        return a[langKey].localeCompare(b[langKey]);
+    });
+    return sorted.map(d => ({ value: d.value, label: d[langKey] }));
+  }, [langKey]);
 
   return (
     <div className="w-full max-w-2xl mx-auto space-y-4">
@@ -120,6 +140,17 @@ const RecipeForm: React.FC<RecipeFormProps> = ({
             >
                 <Camera size={24} />
             </motion.button>
+             <motion.button
+                type="button"
+                onClick={handleRandomClick}
+                disabled={isGenerating}
+                className="p-3 bg-black/30 border border-amber-400/30 rounded-lg text-amber-300 disabled:opacity-50"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                aria-label={t('form.randomButtonTooltip')}
+              >
+                  <Dices size={24} />
+              </motion.button>
             </div>
 
             {mode === 'ingredients' && (
@@ -128,8 +159,14 @@ const RecipeForm: React.FC<RecipeFormProps> = ({
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                 >
-                    <CustomSelect options={cuisineOptions} selectedValue={cuisine} onValueChange={setCuisine} />
-                    <CustomSelect options={dietOptions} selectedValue={diet} onValueChange={setDiet} />
+                    <div>
+                        <label className="text-sm text-stone-100/70 ps-1 mb-1 block">{t('form.cuisineLabel')}</label>
+                        <CustomSelect options={sortedCuisineOptions} selectedValue={cuisine} onValueChange={setCuisine} />
+                    </div>
+                    <div>
+                        <label className="text-sm text-stone-100/70 ps-1 mb-1 block">{t('form.dietLabel')}</label>
+                        <CustomSelect options={sortedDietOptions} selectedValue={diet} onValueChange={setDiet} />
+                    </div>
                 </motion.div>
             )}
 

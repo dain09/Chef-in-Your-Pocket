@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Languages } from 'lucide-react';
@@ -7,10 +7,19 @@ import { audioService } from '../services/audioService';
 const LanguageSwitcher: React.FC = () => {
   const { i18n } = useTranslation();
 
+  useEffect(() => {
+    // Set initial direction on component mount
+    document.documentElement.lang = i18n.language;
+    document.documentElement.dir = i18n.dir(i18n.language);
+  }, [i18n, i18n.language]);
+
   const toggleLanguage = () => {
     audioService.playClick();
     const newLang = i18n.language === 'ar' ? 'en' : 'ar';
-    i18n.changeLanguage(newLang);
+    i18n.changeLanguage(newLang).then(() => {
+        document.documentElement.lang = newLang;
+        document.documentElement.dir = i18n.dir(newLang);
+    });
   };
 
   const currentLangDisplay = i18n.language === 'ar' ? 'EN' : 'ع';

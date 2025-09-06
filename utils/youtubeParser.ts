@@ -1,45 +1,35 @@
 export const getYouTubeEmbedUrl = (url: string): string | null => {
-    if (!url) return null;
-    let videoId: string | null = null;
+    if (!url || typeof url !== 'string') {
+        return null;
+    }
 
-    try {
-        const urlObj = new URL(url);
-        // Standard `https://www.youtube.com/watch?v=...`
-        if (urlObj.hostname === 'www.youtube.com' || urlObj.hostname === 'youtube.com' || urlObj.hostname === 'www.youtube-nocookie.com') {
-            if (urlObj.pathname === '/watch') {
-                videoId = urlObj.searchParams.get('v');
-            } else if (urlObj.pathname.startsWith('/embed/')) {
-                // It's already an embed link, just add our params
-                const existingVideoId = urlObj.pathname.split('/')[2];
-                return `https://www.youtube-nocookie.com/embed/${existingVideoId}?rel=0`;
-            } else if (urlObj.pathname.startsWith('/live/')) {
-                // `https://www.youtube.com/live/...`
-                videoId = urlObj.pathname.split('/')[2];
-            } else if (urlObj.pathname.startsWith('/shorts/')) {
-                // `https://www.youtube.com/shorts/...`
-                videoId = urlObj.pathname.split('/')[2];
-            }
-        } 
-        // Shortened `https://youtu.be/...`
-        else if (urlObj.hostname === 'youtu.be') {
-            videoId = urlObj.pathname.substring(1);
-        }
-    } catch (e) {
-        console.error("Invalid URL for YouTube parsing", e);
-        // Fallback for non-URL strings that might just be an ID
-        const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=|embed\/|live\/|shorts\/)?([a-zA-Z0-9_-]{11})/;
-        const match = url.match(regex);
-        if (match) {
-            videoId = match[1];
-        } else {
-            return null;
-        }
+    let videoId: string | null = null;
+    const trimmedUrl = url.trim();
+
+    // Return early if the URL is empty after trimming
+    if (!trimmedUrl) {
+        return null;
+    }
+
+    // A comprehensive regex to capture the 11-character video ID from various YouTube URL formats.
+    // This is more resilient than the strict `new URL()` constructor.
+    const videoIdRegex = /(?:v=|\/v\/|youtu\.be\/|embed\/|\/v\/|\/e\/|watch\?v=|&v=|(?:\/shorts\/))([a-zA-Z0-9_-]{11})/;
+    const match = trimmedUrl.match(videoIdRegex);
+
+    if (match && match[1]) {
+        videoId = match[1];
+    }
+    
+    // If no ID was found via the regex, check if the string itself is a valid 11-character video ID.
+    // This handles cases where the API returns just the ID.
+    if (!videoId && /^[a-zA-Z0-9_-]{11}$/.test(trimmedUrl)) {
+        videoId = trimmedUrl;
     }
 
     if (videoId) {
-        const cleanVideoId = videoId.split('?')[0]; // Remove any query params from ID itself
-        return `https://www.youtube-nocookie.com/embed/${cleanVideoId}?rel=0`;
+        return `https://www.youtube-nocookie.com/embed/${videoId}?rel=0`;
     }
-
+    
+    // If we couldn't extract an ID, return null to prevent rendering a broken iframe.
     return null;
 };
