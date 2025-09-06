@@ -120,36 +120,38 @@ const RecipeForm: React.FC<RecipeFormProps> = ({
             <ModeButton icon={CalendarClock} label={t('form.modeWeekly')} isActive={mode === 'weekly'} onClick={() => handleModeChange('weekly')} />
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-wrap sm:flex-nowrap gap-3">
             <input
                 ref={inputRef}
                 type="text"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder={getPlaceholderText()}
-                className="w-full p-3 bg-black/30 border border-amber-400/30 rounded-lg text-stone-100 placeholder-stone-100/50 focus:ring-2 focus:ring-amber-500 focus:outline-none transition-shadow"
+                className="flex-grow p-3 bg-black/30 border border-amber-400/30 rounded-lg text-stone-100 placeholder-stone-100/50 focus:ring-2 focus:ring-amber-500 focus:outline-none transition-shadow w-full"
                 required
             />
             <motion.button 
                 type="button" 
                 onClick={() => { audioService.playClick(); onAnalyzeImage(); }}
-                className="p-3 bg-black/30 border border-amber-400/30 rounded-lg text-amber-300"
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-2 p-3 bg-black/30 border border-amber-400/30 rounded-lg text-amber-300"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 aria-label={t('form.analyzeImage')}
             >
-                <Camera size={24} />
+                <Camera size={20} />
+                <span>{t('form.analyzeImageShort')}</span>
             </motion.button>
              <motion.button
                 type="button"
                 onClick={handleRandomClick}
                 disabled={isGenerating}
-                className="p-3 bg-black/30 border border-amber-400/30 rounded-lg text-amber-300 disabled:opacity-50"
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-2 p-3 bg-black/30 border border-amber-400/30 rounded-lg text-amber-300 disabled:opacity-50"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 aria-label={t('form.randomButtonTooltip')}
               >
-                  <Dices size={24} />
+                  <Dices size={20} />
+                  <span>{t('form.randomButton')}</span>
               </motion.button>
             </div>
 

@@ -1,14 +1,10 @@
 import React, { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import GlassCard from './GlassCard';
-import { GraduationCap, X, ChevronRight, Loader } from 'lucide-react';
+import { GraduationCap, ChevronRight, Loader, Home } from 'lucide-react';
 import * as geminiService from '../services/geminiService';
 import type { AcademyLesson } from '../types';
-
-interface ChefsAcademyProps {
-    onClose: () => void;
-}
+import Logo from './Logo';
 
 const lessonCategories = [
     { en: 'Basic Knife Skills', ar: 'مهارات السكين الأساسية' },
@@ -17,7 +13,7 @@ const lessonCategories = [
     { en: 'Understanding Spices', ar: 'فهم البهارات' },
 ];
 
-const ChefsAcademy: React.FC<ChefsAcademyProps> = ({ onClose }) => {
+const ChefsAcademyPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const langKey = i18n.language.split('-')[0] as 'en' | 'ar';
   const [selectedLesson, setSelectedLesson] = useState<AcademyLesson | null>(null);
@@ -41,30 +37,27 @@ const ChefsAcademy: React.FC<ChefsAcademyProps> = ({ onClose }) => {
   }, []);
 
   return (
-     <motion.div
-      className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
-      <GlassCard
-        className="w-full max-w-2xl h-[90vh] p-6 flex flex-col gap-4 relative"
-        initial={{ scale: 0.9 }}
-        animate={{ scale: 1 }}
-        exit={{ scale: 0.9 }}
-      >
-        <button onClick={onClose} className="absolute top-4 end-4 p-1 text-amber-300/70 hover:text-amber-200 z-10">
-          <X size={24} />
-        </button>
-        
-        <div className="text-center">
-            <GraduationCap size={40} className="mx-auto text-amber-400" />
-            <h2 className="mt-2 text-2xl font-bold text-stone-100">{t('chefsAcademy')}</h2>
+    <div className="min-h-screen flex flex-col text-stone-100 font-sans">
+      <header className="w-full max-w-4xl mx-auto p-4 flex justify-between items-center">
+        <a href="/" className="flex items-center gap-3">
+          <Logo className="w-12 h-12 text-amber-300" />
+          <span className="font-bold text-xl hidden sm:block">{t('appName')}</span>
+        </a>
+        <a href="/" className="flex items-center gap-2 px-3 py-2 bg-black/20 rounded-lg hover:bg-black/30">
+          <Home size={20} />
+          <span className="hidden sm:block">{t('Back to Main App')}</span>
+        </a>
+      </header>
+
+      <main className="flex-grow flex flex-col items-center justify-center p-4">
+        <div className="text-center mb-6">
+            <GraduationCap size={48} className="mx-auto text-amber-400" />
+            <h1 className="mt-2 text-3xl font-bold text-stone-100">{t('chefsAcademy')}</h1>
             <p className="mt-1 text-stone-100/70">{t('academy.description')}</p>
         </div>
         
-        <div className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-black/20 rounded-lg p-4 space-y-3">
+        <div className="w-full max-w-4xl flex-grow grid grid-cols-1 md:grid-cols-2 gap-4 bg-black/30 backdrop-blur-lg border border-amber-300/10 shadow-lg rounded-2xl p-6">
+            <div className="bg-black/20 rounded-lg p-4 space-y-3 overflow-y-auto custom-scrollbar">
                 <h3 className="font-semibold text-amber-300">{t('academy.lessonsTitle')}</h3>
                 {lessonCategories.map((cat, index) => (
                     <motion.button
@@ -89,9 +82,10 @@ const ChefsAcademy: React.FC<ChefsAcademyProps> = ({ onClose }) => {
                             key={selectedLesson.id}
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
+                            className="pb-4" // Padding bottom to prevent text from being cut off
                         >
                             <h3 className="text-xl font-bold text-amber-300 break-words">{selectedLesson.title[langKey]}</h3>
-                            <div className="flex gap-4 text-sm text-stone-100/70 my-2">
+                            <div className="flex flex-col sm:flex-row gap-x-4 gap-y-1 text-sm text-stone-100/70 my-2">
                                 <span><strong>{t('academy.difficultyLabel')}:</strong> {t(`difficulty.${selectedLesson.difficulty}` as const, selectedLesson.difficulty)}</span>
                                 <span><strong>{t('academy.durationLabel')}:</strong> {selectedLesson.duration[langKey]}</span>
                             </div>
@@ -105,9 +99,9 @@ const ChefsAcademy: React.FC<ChefsAcademyProps> = ({ onClose }) => {
                 </AnimatePresence>
             </div>
         </div>
-      </GlassCard>
-    </motion.div>
+      </main>
+    </div>
   );
 };
 
-export default ChefsAcademy;
+export default ChefsAcademyPage;

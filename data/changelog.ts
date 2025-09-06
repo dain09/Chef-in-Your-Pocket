@@ -1,4 +1,4 @@
-import { Archive, CalendarDays, Recycle, Search, ChefHat, Palette, Compass, GlassWater, Scaling } from 'lucide-react';
+import { Archive, CalendarDays, Recycle, Search, ChefHat, Palette, Compass, GlassWater, Scaling, BookOpen, Wand2, Dices, Sparkles } from 'lucide-react';
 import type { ElementType } from 'react';
 
 interface ChangelogFeature {
@@ -14,6 +14,35 @@ interface ChangelogEntry {
 }
 
 export const changelog: ChangelogEntry[] = [
+  {
+    version: '4.0.0',
+    title: {
+        en: "The Quality of Life Update!",
+        ar: "تحديث جودة الحياة!"
+    },
+    features: [
+      {
+        icon: BookOpen,
+        title: { en: "Chef's Academy 2.0", ar: "أكاديمية الشيف 2.0" },
+        description: { en: 'The academy now opens in a dedicated tab for a more focused and immersive learning experience.', ar: 'تفتح الأكاديمية الآن في تبويب مخصص لتجربة تعليمية أكثر تركيزًا وغنى.' }
+      },
+      {
+        icon: Wand2,
+        title: { en: 'Interactive UI Feedback', ar: 'تحسينات بصرية تفاعلية' },
+        description: { en: 'Buttons now have a glowing pulse animation while loading to provide clearer feedback.', ar: 'أصبحت الأزرار الآن تتميز بتأثير توهج نابض أثناء التحميل لتقديم ردود فعل مرئية أوضح.' }
+      },
+      {
+        icon: Dices,
+        title: { en: 'Random Recipe Dice', ar: 'زر الوصفة العشوائية' },
+        description: { en: 'Feeling adventurous? The new dice button generates a random, popular recipe for you instantly.', ar: 'هل تشعر بالمغامرة؟ الزر الجديد يولد لك وصفة عشوائية وشهيرة على الفور.' }
+      },
+      {
+        icon: Sparkles,
+        title: { en: 'Dynamic Footer Message', ar: 'رسالة تذييل متغيرة' },
+        description: { en: 'The footer now features a unique, AI-generated uplifting message on every visit.', ar: 'يعرض التذييل الآن رسالة إيجابية فريدة من نوعها يتم إنشاؤها بواسطة الذكاء الاصطناعي في كل زيارة.' }
+      },
+    ]
+  },
   {
     version: '3.0.0',
     title: {

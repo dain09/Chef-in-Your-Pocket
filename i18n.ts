@@ -37,6 +37,8 @@ i18n
           'form.planWeekButton': 'Plan Week',
           'form.generating': 'Generating...',
           'form.analyzeImage': 'Analyze ingredients from image',
+          'form.analyzeImageShort': 'Scan Image',
+          'form.randomButton': 'Random',
           'form.modeIngredients': 'By Ingredients',
           'form.modeName': 'By Name',
           'form.modeLeftovers': 'Leftovers',
@@ -123,7 +125,8 @@ i18n
           'academy.selectPrompt': "Select a lesson to begin.",
           'difficulty.Beginner': "Beginner",
           'difficulty.Intermediate': "Intermediate",
-          'difficulty.Advanced': "Advanced"
+          'difficulty.Advanced': "Advanced",
+          'Back to Main App': "Back to Main App"
         }
       },
       ar: {
@@ -151,6 +154,8 @@ i18n
           'form.planWeekButton': 'خطط الأسبوع',
           'form.generating': 'جاري الإنشاء...',
           'form.analyzeImage': 'تحليل المكونات من صورة',
+          'form.analyzeImageShort': 'مسح صورة',
+          'form.randomButton': 'عشوائي',
           'form.modeIngredients': 'بالمكونات',
           'form.modeName': 'بالاسم',
           'form.modeLeftovers': 'بواقي الطعام',
@@ -237,7 +242,8 @@ i18n
           'academy.selectPrompt': "اختر درسًا للبدء.",
           'difficulty.Beginner': "مبتدئ",
           'difficulty.Intermediate': "متوسط",
-          'difficulty.Advanced': "متقدم"
+          'difficulty.Advanced': "متقدم",
+          'Back to Main App': "العودة للتطبيق الرئيسي"
         }
       }
     }

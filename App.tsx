@@ -25,7 +25,6 @@ import OnboardingTutorial from './components/OnboardingTutorial';
 import WhatsNewModal from './components/WhatsNewModal';
 import Footer from './components/Footer';
 import HandsFreeCookingMode from './components/HandsFreeCookingMode';
-import ChefsAcademy from './components/ChefsAcademy';
 import GlassCard from './components/GlassCard';
 import PantryCheckModal from './components/PantryCheckModal';
 
@@ -237,15 +236,39 @@ const RecipeDetailView: React.FC<{ recipe: Recipe, onBack: () => void, onToggleF
                 )}
 
                 <div className="pt-4 border-t border-amber-300/10 space-y-4">
-                    <motion.button onClick={() => handleGetInfo('substitutions')} className="w-full p-2 text-center text-amber-300 bg-black/20 rounded-lg">{t('suggestSubstitutions')}</motion.button>
+                    <motion.button 
+                        onClick={() => handleGetInfo('substitutions')} 
+                        disabled={!!isLoadingInfo}
+                        className={`w-full p-2 text-center text-amber-300 bg-black/20 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed ${isLoadingInfo === 'substitutions' ? 'animate-pulse ring-2 ring-amber-400' : ''}`}
+                    >
+                        {t('suggestSubstitutions')}
+                    </motion.button>
                     <AnimatePresence>
                         {substitutions && <InfoCard title={t('substitutionsModalTitle')} icon={Soup} content={substitutions} isLoading={isLoadingInfo === 'substitutions'} />}
                     </AnimatePresence>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <motion.button onClick={() => handleGetInfo('nutrition')} className="w-full p-2 text-center text-amber-300 bg-black/20 rounded-lg">{t('nutritionalInfo')}</motion.button>
-                        <motion.button onClick={() => handleGetInfo('trivia')} className="w-full p-2 text-center text-amber-300 bg-black/20 rounded-lg">{t('funFacts')}</motion.button>
-                        <motion.button onClick={() => handleGetInfo('drinks')} className="w-full p-2 text-center text-amber-300 bg-black/20 rounded-lg">{t('suggestedDrinks')}</motion.button>
+                        <motion.button 
+                            onClick={() => handleGetInfo('nutrition')}
+                            disabled={!!isLoadingInfo}
+                            className={`w-full p-2 text-center text-amber-300 bg-black/20 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed ${isLoadingInfo === 'nutrition' ? 'animate-pulse ring-2 ring-amber-400' : ''}`}
+                        >
+                            {t('nutritionalInfo')}
+                        </motion.button>
+                        <motion.button
+                            onClick={() => handleGetInfo('trivia')}
+                            disabled={!!isLoadingInfo}
+                            className={`w-full p-2 text-center text-amber-300 bg-black/20 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed ${isLoadingInfo === 'trivia' ? 'animate-pulse ring-2 ring-amber-400' : ''}`}
+                        >
+                            {t('funFacts')}
+                        </motion.button>
+                        <motion.button
+                            onClick={() => handleGetInfo('drinks')}
+                            disabled={!!isLoadingInfo}
+                            className={`w-full p-2 text-center text-amber-300 bg-black/20 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed ${isLoadingInfo === 'drinks' ? 'animate-pulse ring-2 ring-amber-400' : ''}`}
+                        >
+                            {t('suggestedDrinks')}
+                        </motion.button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                          <AnimatePresence>
@@ -289,7 +312,6 @@ function App() {
   const [isPantryOpen, setIsPantryOpen] = useState(false);
   const [isImageCaptureOpen, setIsImageCaptureOpen] = useState(false);
   const [isHandsFreeOpen, setIsHandsFreeOpen] = useState(false);
-  const [isChefsAcademyOpen, setIsChefsAcademyOpen] = useState(false);
   const [isPantryCheckOpen, setIsPantryCheckOpen] = useState<Recipe | null>(null);
   
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -510,7 +532,17 @@ function App() {
           <div className="flex items-center gap-2 sm:gap-4">
             <motion.button whileHover={{scale: 1.1}} whileTap={{scale:0.9}} onClick={() => setIsFavoritesOpen(true)} className="p-2 bg-black/20 rounded-lg"><Heart /></motion.button>
             <motion.button whileHover={{scale: 1.1}} whileTap={{scale:0.9}} onClick={() => setIsPantryOpen(true)} className="p-2 bg-black/20 rounded-lg"><Archive /></motion.button>
-            <motion.button whileHover={{scale: 1.1}} whileTap={{scale:0.9}} onClick={() => setIsChefsAcademyOpen(true)} className="p-2 bg-black/20 rounded-lg"><GraduationCap /></motion.button>
+            <motion.a 
+              href="/academy.html" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              aria-label={t('chefsAcademy')}
+              whileHover={{scale: 1.1}} 
+              whileTap={{scale:0.9}} 
+              className="p-2 bg-black/20 rounded-lg block"
+            >
+              <GraduationCap />
+            </motion.a>
           </div>
         </header>
         
@@ -529,7 +561,6 @@ function App() {
         {isPantryOpen && <PantryManager isOpen={isPantryOpen} onClose={() => setIsPantryOpen(false)} pantryItems={pantryItems} onUpdatePantry={setPantryItems} onPantryChallenge={handlePantryChallenge} />}
         {isImageCaptureOpen && <ImageCaptureModal isOpen={isImageCaptureOpen} onClose={() => setIsImageCaptureOpen(false)} onCapture={handleImageCapture} />}
         {isHandsFreeOpen && currentRecipe && <HandsFreeCookingMode recipe={currentRecipe} onClose={() => setIsHandsFreeOpen(false)} />}
-        {isChefsAcademyOpen && <ChefsAcademy onClose={() => setIsChefsAcademyOpen(false)} />}
         {isPantryCheckOpen && (
           <PantryCheckModal
             ingredients={isPantryCheckOpen.ingredients.map(i => `${i.amount[langKey]} ${i.name[langKey]}`)}
